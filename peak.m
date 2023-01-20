@@ -1,18 +1,19 @@
-function peak(x,thr,timeVec,freqVec,mark,minDist,noPlateau)
+function peak(x,coimask,thr,timeVec,freqVec,mark,minDist,noPlateau)
 
 %
-%---------------------------------------------------------------------------
-% Morlet Wavelet Transform Peaks Detection
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
+% CWT Peaks Detection
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% peak(x,thr,timeVec,freqVec,mark,minDist,noPlateau)
+% peak(x,coimask,thr,timeVec,freqVec,mark,minDist,noPlateau)
 %
 % INPUT        TYPE       MEANING
 % -----        ----       -------
-% x         -> matrix  -> Morlet Wavelet Modulus
+% x         -> matrix  -> Continuous Wavelet Modulus
+% coimask   -> matrix  -> COI Mask
 % thr       -> scalar  -> Threshold Percentage
 % timeVec   -> array   -> Time Vector
 % freqVec   -> array   -> Frequency Vector
@@ -66,13 +67,13 @@ x = x / massimox;
 threshold = thr/100;
 
 xt = (x >= threshold);
-maxima = maxima .* xt;
+maxima = maxima .* xt .* coimask;
 
 % Merge with original scalogram and mark the peaks
 [rx,cx] = find(maxima);
 index = find(maxima);
 
-maxmap = (x .* xt);
+maxmap = (x .* xt .* coimask);
 maxmap(rx,:) = ones(length(rx),n);
 
 maxmap(index) = 0.5;
@@ -103,9 +104,6 @@ set(gca,'XTick',[]);
 ylim([0,nscale]);
 set(gca,'YTick',rx);
 
-% maxVec = freqVec(1)*(2.**(rx/nvoice));
-% E' corretto concettualmente, ma il valore di freqVec(1) è già stato arrotondato in WT...
-% ...quindi risulta più preciso così:
 maxVec = lowest*(2.**(rx/nvoice));
 maxVec = floor(maxVec*10)/10;
 set(gca,'YTickLabel',maxVec);
@@ -113,7 +111,7 @@ set(gca,'YTickLabel',maxVec);
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

@@ -1,9 +1,9 @@
 function FEAT(wt,par,ratiomat,output)
 
 %
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
 % Multitrace Features Extraction
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
@@ -12,7 +12,7 @@ function FEAT(wt,par,ratiomat,output)
 %
 % INPUT       TYPE         MEANING
 % -----       ----         -------
-% wt       -> matrix    -> 1st WT Output - Morlet Wavelet Transform
+% wt       -> matrix    -> 1st WT Output - Continuous Wavelet Transform
 % par      -> structure -> 2nd WT Output - Parameters
 % ratiomat -> matrix    -> [PDOutput1;PDOutput2;PDOutput3;...]
 % output   -> boolean   -> Print .eps Output Graphs
@@ -23,7 +23,7 @@ function FEAT(wt,par,ratiomat,output)
 %
 % WARNING: This code represents a temporary implementation of FEAT function
 % ======== because it does not allow comparison among traces acquired under
-%          different parameters (sampling time, length,...).
+%          different recording parameters (sampling time, length,...).
 %  
 
 % Variables Assignment
@@ -48,15 +48,25 @@ endif
 meanratio = mean(ratiomat);
 stdevratio = std(ratiomat);
 stderratio = stdevratio./sqrt(size(ratiomat)(1));
-addstd = meanratio.+1.96*stderratio;
-substd = meanratio.-1.96*stderratio;
+
+% Upper and Lower Confidence Interval bounds
+% Under the hypothesis of log-normal data distribution
+mu = log(meanratio./sqrt((stderratio.**2)./(meanratio.**2).+1));
+sigma = sqrt(log((stderratio.**2)./(meanratio.**2).+1));
+
+upci = e.**(mu.+1.96*sigma);
+lowci = e.**(mu.-1.96*sigma);
+
+% Under the hypothesis of normal data distribution
+%upci = meanratio.+1.96*stderratio;
+%lowci = meanratio.-1.96*stderratio;
 
 figure
 
 plot(meanratio,'-r','LineWidth',2), hold on
-plot(addstd,'-b','LineWidth',1)
-plot(substd,'-b','LineWidth',1)
-plot([min(xlim),max(xlim)],[1,1],'-m','LineWidth',2)
+plot([min(xlim),max(xlim)],[1,1],'-g','LineWidth',2)
+%plot(upci,'-b','LineWidth',1)
+plot(lowci,'-b','LineWidth',1)
 
 axis([0,nscale])
 set(gca,'XTick',[0:nvoice:nscale]);
@@ -80,19 +90,10 @@ if (output)
 	print -depsc featureout.eps
 endif
 
-%% if (length(mark) < 3)
-%% 	[pval,t,dof] = t_test_2(c{1},c{2});
-%% 	d3 = MEAN3(2)/MEAN3(1);
-%% 	d3 = floor(d3*100)/100; % In order to have only 2 decimal digits
-%% 	printf(["\nr-J = ",num2str(d3)]);
-%% 	%printf(["\nDelta-J Significance Level = ",num2str(pval*100)]);
-%% 	printf(["\n"]);
-%% endif
-
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

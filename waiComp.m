@@ -1,18 +1,19 @@
-function waiComp(x,timeVec,freqVec,nvoice,mark,flag)
+function waiComp(x,coimask,timeVec,freqVec,nvoice,mark,flag)
 
 %
-%---------------------------------------------------------------------------
-% Morlet Wavelet Transform Complete-Wave-Activity Index (WAI)
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
+% CWT Complete Wave-Activity Index - CompWAI
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% waiComp(x,timeVec,freqVec,nvoice,mark,flag)
+% waiComp(x,coimask,timeVec,freqVec,nvoice,mark,flag)
 %
 % INPUT       TYPE        MEANING
 % -----       ----        -------
-% x        -> matrix   -> Morlet Wavelet Modulus
+% x        -> matrix   -> Continuous Wavelet Modulus
+% coimask  -> matrix   -> COI Mask
 % timeVec  -> array    -> Time Vector
 % freqVec  -> array    -> Frequency Vector
 % nvoice   -> scalar   -> Lines of Pixel per Octave
@@ -27,10 +28,13 @@ function waiComp(x,timeVec,freqVec,nvoice,mark,flag)
 nscale = size(x)(1);
 n = size(x)(2);
 
+x = x .* coimask;
+
 WAI1=[];
 WAI2=[];
 WAI3=[];
 
+% Frequency Matrix for the Complete WAI
 freqVecComp = freqVec(end).*2.**(-([0:1:nscale-1])./nvoice);
 freqVecComp = freqVecComp';
 freqVecComp = flipud(freqVecComp);
@@ -51,7 +55,8 @@ endif
 MEAN1 = [MEAN1,(1./(length(timeVec)-mark(end)+1))*sum(WAI1(mark(end):end))];
 d1 = MEAN1(2)/MEAN1(1);
 d1 = floor(d1*100)/100; % In order to have only 2 decimal digits
-MEAN1 = floor(MEAN1*10)/10; % In order to have only 1 decimal digits
+%MEAN1 = floor(MEAN1*10)/10; % In order to have only 1 decimal digits
+MEAN1 = floor(MEAN1*100)/100; % In order to have only 2 decimal digits
 
 MEAN2(1) = (1./mark(1))*sum(WAI2(1:mark(1)));
 if (length(mark) > 1)
@@ -62,7 +67,8 @@ endif
 MEAN2 = [MEAN2,(1./(length(timeVec)-mark(end)+1))*sum(WAI2(mark(end):end))];
 d2 = MEAN2(2)/MEAN2(1);
 d2 = floor(d2*100)/100; % In order to have only 2 decimal digits
-MEAN2 = floor(MEAN2*10)/10; % In order to have only 1 decimal digits
+%MEAN2 = floor(MEAN2*10)/10; % In order to have only 1 decimal digits
+MEAN2 = floor(MEAN2*100)/100; % In order to have only 2 decimal digits
 
 MEAN3(1) = (1./mark(1))*sum(WAI3(1:mark(1)));
 if (length(mark) > 1)
@@ -73,7 +79,8 @@ endif
 MEAN3 = [MEAN3,(1./(length(timeVec)-mark(end)+1))*sum(WAI3(mark(end):end))];
 d3 = MEAN3(2)/MEAN3(1);
 d3 = floor(d3*100)/100; % In order to have only 2 decimal digits
-MEAN3 = floor(MEAN3*10)/10; % In order to have only 1 decimal digits
+%MEAN3 = floor(MEAN3*10)/10; % In order to have only 1 decimal digits
+MEAN3 = floor(MEAN3*100)/100; % In order to have only 2 decimal digits
 
 % Plot Indexes
 subplot(3,2,1+flag), hold on
@@ -124,6 +131,7 @@ set(gca,'XTick',[floor(timeVec(1)),get(gca,'XTick'),floor(timeVec(end))]);
 if (flag == 0)
 	ylabel('Index J','FontSize',18)
 endif
+xlabel('Time (s)','FontSize',18)
 text(timeVec(15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN3(1))],'FontSize',18,'Color','k')
 if (length(mark) > 1)
 	for h = 2:length(mark)
@@ -138,7 +146,7 @@ subplot(3,2,1+flag), hold on
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

@@ -1,30 +1,32 @@
-function mor = morlet1(n,Y,sigma2,lft,nvoice)
+function [mor,fac] = morlet1(Y,sigma2,lft,nvoice)
 
 %
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
 % Morlet Wavelet ver.1
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% mor = morlet1(n,Y,sigma2,lft,nvoice)
+% [mor,fac] = morlet1(Y,sigma2,lft,nvoice)
 %
 % INPUT       TYPE        MEANING
 % -----       ----        -------
-% n        -> scalar   -> Signal Length
 % Y        -> array    -> Signal FFT
 % sigma2   -> scalar   -> Time/Frequency Resolution Tradeoff
 % lft      -> scalar   -> Low-Frequency Threshold
-% nvoice   -> scalar   -> Lines of Pixel per Octave
+% nvoice   -> scalar   -> Amount of Inter-Octave Frequencies
 %
 % OUTPUT      TYPE        MEANING
 % ------      ----        -------
 % mor      -> matrix   -> Morlet Wavelet Transform
+% fac      -> scalar   -> COI e-folding Factor
 %
 
 % Frequency Shift - Useful for Calibration
 fs = 6.4;
+
+n = length(Y);
 
 omega = [(0:(n/2)),(((-n/2)+1):-1)]*(2*pi/n);
 omega = omega(:);
@@ -61,10 +63,13 @@ mor = ((sigma2/pi)**(1/4))*mor;
 mor = mor';
 mor = flipud(mor);
 
+% Cone of Influence e-folding Factor
+fac = (sqrt(sigma2)*fs)/(sqrt(2)*pi);
+
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

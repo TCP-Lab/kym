@@ -1,19 +1,20 @@
-function [maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,thr,mark,minDist,noPlateau)
+function [maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,coimask,thr,mark,minDist,noPlateau)
 
 %
-%---------------------------------------------------------------------------
-% Morlet Wavelet Transform Frequency Paths
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
+% CWT Frequency Paths
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% [maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,thr,mark,minDist,noPlateau)
+% [maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,coimask,thr,mark,minDist,noPlateau)
 %
 % INPUT        TYPE       MEANING
 % -----        ----       -------
-% x         -> matrix  -> Morlet Wavelet Modulus
-% y         -> matrix  -> Morlet Wavelet Real Part
+% x         -> matrix  -> Continuous Wavelet Modulus
+% y         -> matrix  -> Continuous Wavelet Real Part
+% coimask   -> matrix  -> COI Mask
 % thr       -> scalar  -> Threshold Percentage
 % mark      -> array   -> Time Marker Set (Step Number)
 % minDist   -> scalar  -> Minimum Distance Between 2 Peaks
@@ -21,8 +22,8 @@ function [maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,thr,mark,minDist,noPlatea
 %
 % OUTPUT       TYPE        MEANING
 % ------       ----        -------
-% maxmap1   -> matrix   -> Morlet Wavelet Modulus with Paths
-% maxmap2   -> matrix   -> Morlet Wavelet Real Part with Paths
+% maxmap1   -> matrix   -> Continuous Wavelet Modulus with Paths
+% maxmap2   -> matrix   -> Continuous Wavelet Real Part with Paths
 % maxima    -> matrix   -> Thresholded Maxima Coordinate
 % maximaNT  -> matrix   -> Non-Thresholded Maxima Coordinate
 %
@@ -59,14 +60,14 @@ x = x / massimox;
 threshold = thr/100;
 
 xt = (x >= threshold);
-maximaNT = maxima;
-maxima = maxima .* xt;
+maximaNT = maxima .* coimask;
+maxima = maxima .* xt .* coimask;
 
 % Merge with original scalogram and Mark the peaks in red
 index = find(maxima);
 [rx,cx] = find(maxima);
 
-maxmap1 = (x .* xt);
+maxmap1 = (x .* xt .* coimask);
 [maxmap1,b] = gray2ind(maxmap1);
 maxmap1 = ind2rgb(maxmap1,bone());
 
@@ -102,7 +103,7 @@ yt = (y >= threshold);
 %yt = xt; %Per usare gli stessi perimetri di soglia del modulo
 
 % Merge with original scalogram and Mark the peaks in red
-maxmap2 = (y .* yt);
+maxmap2 = (y .* yt .* coimask);
 [maxmap2,b] = gray2ind(maxmap2);
 maxmap2 = ind2rgb(maxmap2,bone());
 
@@ -131,7 +132,7 @@ maxmap2(:,mark,3) = 0.85;
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

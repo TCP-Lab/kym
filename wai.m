@@ -1,18 +1,18 @@
 function wai(x,timeVec,lowest,nvoice,mark,maxima,l,flag)
 
 %
-%---------------------------------------------------------------------------
-% Morlet Wavelet Transform Wave-Activity Index (WAI)
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
+% CWT Wave-Activity Index - WAI
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% wai(x,timeVec,lowest,nvoice,mark,maxima,l)
+% wai(x,timeVec,lowest,nvoice,mark,maxima,l,flag)
 %
 % INPUT       TYPE        MEANING
 % -----       ----        -------
-% x        -> matrix   -> Morlet Wavelet Modulus
+% x        -> matrix   -> Continuous Wavelet Modulus
 % timeVec  -> array    -> Time Vector
 % lowest   -> scalar   -> Lowest Frequency Taken into Account
 % nvoice   -> scalar   -> Lines of Pixel per Octave
@@ -115,7 +115,8 @@ for k = 1:length(mark)
 		plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
 endfor
 axis([timeVec2(1),timeVec2(end)])
-set(gca,'XTick',[floor(timeVec2(2)),get(gca,'XTick'),floor(timeVec2(end))]); % floor(timeVec2(1)) results sometimes too small to be displayed
+set(gca,'XTick',[floor(timeVec2(2)),get(gca,'XTick'),floor(timeVec2(end))]);
+% If timeVec2(1) is not an integer floor(timeVec2(1)) results too small to be displayed
 if (flag == 0)
 	ylabel('Index I','FontSize',18)
 endif
@@ -157,6 +158,7 @@ set(gca,'XTick',[floor(timeVec2(2)),get(gca,'XTick'),floor(timeVec2(end))]);
 if (flag == 0)
 	ylabel('Index J','FontSize',18)
 endif
+xlabel('Time (s)','FontSize',18)
 text(timeVec((l-1)/2+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN3(1))],'FontSize',18,'Color','k')
 if (length(mark) > 1)
 	for h = 2:length(mark)
@@ -171,7 +173,7 @@ subplot(3,2,1+flag), hold on
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

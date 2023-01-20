@@ -1,31 +1,34 @@
-function ratio = vector(x,freqVec,periodVec,mark)
+function ratio = vector(x,coimask,freqVec,periodVec,mark)
 
 %
-%---------------------------------------------------------------------------
-% Morlet Wavelet Transform Vector Approach
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
+% CWT Vector Approach
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% ratio = vector(x,freqVec,periodVec,mark)
+% ratio = vector(x,coimask,freqVec,periodVec,mark)
 %
 % INPUT        TYPE        MEANING
 % -----        ----        -------
-% x         -> matrix   -> Morlet Wavelet Modulus
+% x         -> matrix   -> Continuous Wavelet Modulus
+% coimask   -> matrix   -> COI Mask
 % freqVec   -> array    -> Frequency Vector
 % periodVec -> array    -> Period Vector
 % mark      -> array    -> Time Marker Set (Step Number)
 %
 % OUTPUT       TYPE        MEANING
 % ------       ----        -------
-% ratio     -> array    -> post/pre Ratio Vector
+% ratio     -> array    -> post/pre Spectrum Ratio Vector
 % -none-    -> plot     -> Plot Resulting from Analysis
 %
 
 n = size(x)(2);
 nscale = size(x)(1);
 nvoice = (size(x)(1))/(length(freqVec)-1);
+
+x = x .* coimask;
 
 pre = sum(x(:,1:mark(1)),2);
 pre = 1000*pre/(mark(1));
@@ -58,6 +61,9 @@ elseif (length(mark) == 1)
 	ratio = post./pre;
 	ratio = ratio(:)';
 endif
+
+% Prevent to NaN and Inf from being plotted
+ratio(find(isnan(ratio) | isinf(ratio))) = 0;
 
 dist2 = sqrt(sum(abs(post-pre).**2)/(nvoice));
 normpre = sqrt(sum(abs(pre).**2)/(nvoice));
@@ -131,7 +137,7 @@ set(gca,'position',[0.130,0.110,0.775,0.68])
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

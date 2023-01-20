@@ -1,21 +1,27 @@
-function fourier(x,sig,freqVec,filter)
+function fourier(x,coimask,sig,freqVec,filter,ylog)
 
 %
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
 % Fourier Spectrum vs. Wavelet Energy Density
-%---------------------------------------------------------------------------
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% fourier(x,sig,freqVec,filter)
+% fourier(x,coimask,sig,freqVec,filter,ylog)
 %
 % INPUT       TYPE         MEANING
 % -----       ----         -------
-% x        -> matrix    -> Morlet Wavelet Modulus
+% x        -> matrix    -> Continuous Wavelet Modulus
+% coimask  -> matrix    -> COI Mask
 % sig      -> array     -> 3rd WT Output - Original Signal
 % freqVec  -> array     -> Frequency Vector
 % filter   -> scalar    -> Filter Type for the Original Signal
+% ylog     -> scalar    -> 0 = Linear y-Scale / 1 = Log y-Scale
+%
+% OUTPUT      TYPE        MEANING
+% ------      ----        -------
+% -none-   -> plot      -> Plot Resulting from Analysis
 %
 
 % Variables Assignment
@@ -24,6 +30,8 @@ lowest = freqVec(end)/(2**(length(freqVec)-1));
 nscale = size(x)(1);
 nvoice = (size(x)(1))/(length(freqVec)-1);
 n = size(x)(2);
+
+x = x .* coimask;
 
 NRG = (10**3)*sum(x.**2,2);
 
@@ -59,6 +67,12 @@ FT = abs(FT).**2;
 FT = FT(1:N/2+1);
 FT(2:N/2) = 2*FT(2:N/2);
 
+% Log Scale for y-axis: z = log(y+1)
+if (ylog == 1)
+	NRG = log(NRG+1);
+	FT = log(FT+1);
+endif
+
 % Assemble Fourier Spectrum x-axis
 xax = [0:N/2]./(N/2).*freqVec(end);
 if (sum(xax == lowest) != 1)
@@ -75,6 +89,14 @@ set(graph(2),'XTick',[log2(xax(1)):(log2(xax(end))-log2(xax(1)))/(length(freqVec
 
 set(graph(1),'XTickLabel',freqVec);
 set(graph(2),'XTickLabel',freqVec);
+
+% Log Scale for y-axis: z = log(y+1) -> y = e**z-1
+if (ylog == 1)
+	axes(graph(1))
+	set(gca,'YTickLabel',floor((e.**(get(gca,'YTick'))-1)*100)/100); % In order to have only 2 decimal digits
+	axes(graph(2))
+	set(gca,'YTickLabel',floor((e.**(get(gca,'YTick'))-1)*100)/100);
+endif
 
 ylabel(graph(1),'Wavelet Energy Density','FontSize',18)
 ylabel(graph(2),'Fourier Spectrum','FontSize',18)
@@ -110,7 +132,7 @@ legend('Fourier Spectrum','Location','East')
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %

@@ -1,30 +1,32 @@
 function ratio = PD(wt,par,sig,thr1,thr2,output)
 
-%
-%---------------------------------------------------------------------------
-% Morlet Wavelet Transform Analysis and Peaks Detection
-%---------------------------------------------------------------------------
+% 
+%--------------------------------------------------------------------------------
+% CWT Analysis and Peaks Detection
+%--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% PD(wt,par,thr1,thr2,output)
+% ratio = PD(wt,par,sig,thr1,thr2,output)
 %
 % INPUT       TYPE         MEANING
 % -----       ----         -------
-% wt       -> matrix    -> 1st WT Output - Morlet Wavelet Transform
+% wt       -> matrix    -> 1st WT Output - Continuous Wavelet Transform
 % par      -> structure -> 2nd WT Output - Parameters
+% sig      -> array     -> 3rd WT Output - Calcium Signal
 % thr1     -> scalar    -> Peaks Detection Threshold Percentage
 % thr2     -> scalar    -> Frequency Paths Threshold Percentage
 % output   -> boolean   -> Print .eps Output Graphs
 %
 % OUTPUT      TYPE         MEANING
 % ------      ----         -------
-% ratio    -> array     -> post/pre Ratio Vector
+% ratio    -> array     -> post/pre Spectrum Ratio Vector
 % -none-   -> plot      -> 6 Plots Resulting from Analysis
 %
 
 % Variables Assignment
+coimask = par.k;
 timeVec = par.x;
 freqVec = par.y;
 periodVec = par.z;
@@ -57,7 +59,7 @@ endif
 
 figure
 
-energy(x,timeVec,freqVec,nvoice,mark)
+energy(x,coimask,timeVec,freqVec,nvoice,mark)
 
 % Print output graph
 if (output)
@@ -70,7 +72,7 @@ endif
 
 figure
 
-fourier(x,sig,freqVec,1)
+fourier(x,coimask,sig,freqVec,1,1)
 
 title(['Fourier Spectrum vs. Wavelet Energy Density - ROI ',num2str(par.r)],'FontSize',18)
 
@@ -80,14 +82,14 @@ if (output)
 endif
 
 %--------------------------------------------------------------------------------
-% Morlet Wavelet Transform Peaks Detection
+% CWT Peaks Detection
 %--------------------------------------------------------------------------------
 
 figure
 
-peak(x,thr1,timeVec,freqVec,mark,5,false)
+peak(x,coimask,thr1,timeVec,freqVec,mark,5,false)
 
-title([num2str(thr1),'% Thresholded - Morlet Wavelet Transform Peaks Detection - ROI ',num2str(par.r)],'FontSize',18)
+title([num2str(thr1),'% Thresholded - Continuous Wavelet Transform Peaks Detection - ROI ',num2str(par.r)],'FontSize',18)
 
 % Print output graph
 if (output)
@@ -95,12 +97,12 @@ if (output)
 endif
 
 %--------------------------------------------------------------------------------
-% Morlet Wavelet Transform Frequency Paths
+% CWT Frequency Paths
 %--------------------------------------------------------------------------------
 
 figure
 
-[maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,thr2,mark,5,false);
+[maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,coimask,thr2,mark,5,false);
 
 subplot(2,1,1), hold on
 imagesc(timeVec,[],maxmap1)
@@ -110,7 +112,7 @@ set(gca,'YTick',[0:nvoice:nscale]); % Maximum number of displayable ticks on ord
 set(gca,'YTick',[get(gca,'YTick'),1]); % In order to display freqVec(1) value
 set(gca,'YTickLabel',freqVec);
 ylabel('Frequency (mHz)','FontSize',18)
-title([num2str(thr2),'% Thresholded - Morlet Wavelet Transform Frequency Paths - ROI ',num2str(par.r)],'FontSize',18)
+title([num2str(thr2),'% Thresholded - Continuous Wavelet Transform Frequency Paths - ROI ',num2str(par.r)],'FontSize',18)
 
 subplot(2,1,2), hold on
 imagesc(timeVec,[],maxmap2)
@@ -128,7 +130,7 @@ if (output)
 endif
 
 %--------------------------------------------------------------------------------
-% Morlet Wavelet Transform Wave-Activity Index (WAI)
+% CWT Wave-Activity Index - WAI
 %--------------------------------------------------------------------------------
 
 figure
@@ -153,7 +155,7 @@ if (output)
 endif
 
 %--------------------------------------------------------------------------------
-% Morlet Wavelet Transform Complete-Wave-Activity Index (WAI)
+% CWT Complete Wave-Activity Index - CompWAI
 %--------------------------------------------------------------------------------
 
 figure
@@ -170,13 +172,13 @@ threshold = thr2/100;
 xt = (xt >= threshold);
 xt = x .* xt;
 
-waiComp(xt,timeVec,freqVec,nvoice,mark,0)
+waiComp(xt,coimask,timeVec,freqVec,nvoice,mark,0)
 
 title([num2str(thr2),'% Thresholded Complete-WAI'],'FontSize',18)
 
 % NO Threshold Index
 
-waiComp(x,timeVec,freqVec,nvoice,mark,1)
+waiComp(x,coimask,timeVec,freqVec,nvoice,mark,1)
 
 title('NO Thresholded Complete-WAI','FontSize',18)
 
@@ -186,16 +188,16 @@ if (output)
 endif
 
 %--------------------------------------------------------------------------------
-% Morlet Wavelet Transform Vector Approach
+% CWT Vector Approach
 %--------------------------------------------------------------------------------
 
 if (length(mark) < 3)
 	
 	figure
 	
-	ratio = vector(x,freqVec,periodVec,mark);
+	ratio = vector(x,coimask,freqVec,periodVec,mark);
 	
-	title(['Morlet Wavelet Transform Vector Analysis - ROI ',num2str(par.r)],'FontSize',18)
+	title(['Continuous Wavelet Transform Vector Analysis - ROI ',num2str(par.r)],'FontSize',18)
 	
 	% Print output graph
 	if (output)
@@ -207,7 +209,7 @@ endif
 
 %---------------------------------------------------------------------%
 %                                                                     %
-% A.A. 2009 / 2010                                                    %
+% A.A. 2009/2010 - 2010/2011                                          %
 % Original code by Federico Alessandro Ruffinatti                     %
 % Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
 % Scuola di Dottorato in Neuroscienze - XXV ciclo                     %
