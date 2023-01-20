@@ -23,106 +23,139 @@ function peak(x,coimask,thr,timeVec,freqVec,mark,minDist,noPlateau)
 %
 % OUTPUT       TYPE       MEANING
 % ------       ----       -------
-% -none-    -> plot    -> Plot Resulting from Analysis
+% -none-    -> plot    -> 1 Plot Resulting from Analysis
 %
 
-% In case minimum distance isn't defined for all of x dimensions
+% Graphic Parameters
+s1 = 16; % X-Y TickLabel Size
+s2 = 19; % X-Y Label and Text Size
+s3 = 24; % Title Size
+
+% If minimum distance isn't defined for all of x dimensions
 % the first value is used as the default for all of the dimensions
-dimX = length(size(x));
-if (length(minDist) != dimX)
-	minDist = minDist(ones(dimX,1));
-endif
-% Validity checks
-minDist = ceil(minDist);
-minDist = max([minDist(:)' ; ones(1,length(minDist))]);
-minDist = min([minDist ; size(x)]);
+if (length(minDist) ~= 2)
+	minDist = minDist(ones(1,2));
+end
 
-n = size(x)(2);
-nscale = size(x)(1);
-nvoice = (size(x)(1))/(length(freqVec)-1);
-lowest = freqVec(end)/(2**(length(freqVec)-1));
+n = size(x,2);
+nscale = size(x,1);
+nvoice = size(x,1)/(length(freqVec)-1);
+lowest = freqVec(end)/(2^(length(freqVec)-1));
 
-% Plateau Handling
+% Plateau handling
 % Without this code points with the same hight will be recognized as peaks
 if (noPlateau)
 	temp = sort(x(:));
 	dY = diff(temp);
-	% Finding the minimum step in the data
-	minimumDiff = min( dY(dY != 0) );
-	% Adding noise which won't affect the peaks
+	% Find the minimum step in the data
+	minimumDiff = min(dY(dY ~= 0));
+	% Add noise which won't affect the peaks
 	x = x + rand(size(x))*minimumDiff;
-endif
+end
 
-% Peaks Detection
+% Peaks detection
 se = ones(minDist);
 X = imdilate(x,se);
 maxima = (x == X);
 
-% Threshold
-minimox = min(min(x));
-x = x - minimox;
-massimox = max(max(x));
-x = x / massimox;
+% Rescale to [0,1]
+wtabs = (x-min(min(x)))/max(max(x-min(min(x))));
 
+% Threshold and COI
 threshold = thr/100;
+wtabst = (wtabs >= threshold);
+maxima = maxima .* wtabst .* coimask;
 
-xt = (x >= threshold);
-maxima = maxima .* xt .* coimask;
-
-% Merge with original scalogram and mark the peaks
+% Find and mark the peaks
 [rx,cx] = find(maxima);
-index = find(maxima);
+index1 = find(maxima);
 
-maxmap = (x .* xt .* coimask);
-maxmap(rx,:) = ones(length(rx),n);
+% Convert to RGB and shade filtered regions gray - If length(index)==0 this does nothing
+index2 = find(coimask == 0 | wtabst == 0);
+[wtabsind,b] = gray2ind(wtabs,128);
+wtabs = ind2rgb(wtabsind,jet(128));
+gswtabs = ind2rgb(wtabsind,gray(128));
+wtabs(index2) = gswtabs(index2);
+wtabs(index2 + n*nscale) = gswtabs(index2 + n*nscale);
+wtabs(index2 + 2*n*nscale) = gswtabs(index2 + 2*n*nscale);
 
-maxmap(index) = 0.5;
-indexx = index(find(index > 3*nscale));
+% Colour markers blue - If length(mark)==0 this does nothing
+wtabs(:,mark,1) = 0;
+wtabs(:,mark,2) = 0.5;
+wtabs(:,mark,3) = 1;
+
+% Colour maxima projections red
+wtabs(rx,:,1) = 1;
+wtabs(rx,:,2) = 0;
+wtabs(rx,:,3) = 0;
+
+% Colour maxima white
+wtabs(index1) = 1;
+wtabs(index1 + n*nscale) = 1;
+wtabs(index1 + 2*n*nscale) = 1;
+
+% Increase maxima thickness
+indexx = index1(find(index1 > 3*nscale));
 for k = 1:3
-	maxmap(indexx-k*nscale) = 0.5;
-endfor
-indexx = index(find(index <= (n*nscale)-3*nscale));
+	wtabs(indexx - k*nscale) = 1;
+	wtabs(indexx - k*nscale + n*nscale) = 1;
+	wtabs(indexx - k*nscale + 2*n*nscale) = 1;
+end
+indexx = index1(find(index1 <= (n*nscale)-3*nscale));
 for k = 1:3
-	maxmap(indexx+k*nscale) = 0.5;
-endfor
+	wtabs(indexx + k*nscale) = 1;
+	wtabs(indexx + k*nscale + n*nscale) = 1;
+	wtabs(indexx + k*nscale + 2*n*nscale) = 1;
+end
 
-% Markers
-maxmap(:,mark) = 0.5;
+% Display results
+image(timeVec(1):timeVec(end),1:size(wtabs,1),wtabs), hold on
+xlim([timeVec(1),timeVec(end)])
+ylim([0.5,size(wtabs,1)+0.5])
+set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
+set(gca,'YDir','normal','YTick',unique([1,nvoice:nvoice:nscale])); % Element 1 is needed to display freqVec(1) value
+set(gca,'YTickLabel',num2str(freqVec'));
+ylabel('Frequency (mHz)','FontSize',s2)
+xlabel('Time (s)','FontSize',s2)
 
-% Display Results
-imagesc(timeVec,[],maxmap)
-set(gca,'XTick',[get(gca,'XTick'),floor(timeVec(end))]);
-set(gca,'YDir','normal');
-set(gca,'YTick',[0:nvoice:nscale]); % Maximum number of displayable ticks on ordinates
-set(gca,'YTick',[get(gca,'YTick'),1]); % In order to display freqVec(1) value
-set(gca,'YTickLabel',freqVec);
-ylabel('Frequency (mHz)','FontSize',18)
-xlabel('Time (s)','FontSize',18)
+% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+set(gca,'Position',[0.12,0.11,0.80,0.815],'Color','none')
+axes('Position',[0.12,0.11,0.80,0.815],'XAxisLocation','bottom','YAxisLocation','right','Color','none','YColor','r');
+xlim([timeVec(1),timeVec(end)])
+ylim([0.5,size(wtabs,1)+0.5])
+set(gca,'FontSize',s1,'XTick',[]);
+set(gca,'YDir','normal','YTick',unique(rx));
 
-axes('YAxisLocation','right','YColor','r');
-set(gca,'XTick',[]);
-ylim([0,nscale]);
-set(gca,'YTick',rx);
-
-maxVec = lowest*(2.**(rx/nvoice));
+maxVec = lowest*(2.^(unique(rx)/nvoice));
 maxVec = floor(maxVec*10)/10;
-set(gca,'YTickLabel',maxVec);
+
+set(gca,'YTickLabel',num2str(maxVec));
 
 
-%---------------------------------------------------------------------%
-%                                                                     %
-% A.A. 2009/2010 - 2010/2011                                          %
-% Original code by Federico Alessandro Ruffinatti                     %
-% Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
-% Scuola di Dottorato in Neuroscienze - XXV ciclo                     %
-%                                                                     %
-% Wavelet computation is regarded as a time convolution and it is     %
-% implemented as a product in the Fourier transformed domain.         %
-% A standard code for this algorithm can be found, for instance,      %
-% in WaveLab850 - http://www-stat.stanford.edu/~wavelab/              %
-%                                                                     %
-% Peaks detection uses a technique that is based on images dilation.  %
-% See, for instance, localMaximum.m m-file by Yonathan Nativ          %
-% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/  %
-%                                                                     %
-%---------------------------------------------------------------------%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%
+%%                                                                                                      %%
+%% KYM Project                                                                                          %%
+%% -----------                                                                                          %%
+%% First Released in 2010                                                                               %%
+%% Original code by Federico Alessandro Ruffinatti                                                      %%
+%%                                                                                                      %%
+%% UNIVERSITY OF TORINO                                                                                 %%
+%% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
+%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
+%% Department of Life Sciences and Systems Biology                                                      %%
+%% Laboratory of Cellular Neurophysiology                                                               %%
+%% Via Accademia Albertina 13 10123 Torino                                                              %%
+%%                                                                                                      %%
+%% Acknowledgements:                                                                                    %%
+%% -----------------                                                                                    %%
+%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
+%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% http://www-stat.stanford.edu/~wavelab/                                                               %%
+%%                                                                                                      %%
+%% Peaks detection uses a technique that is based on images dilation.                                   %%
+%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
+%%                                                                                                      %%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%

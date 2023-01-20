@@ -1,4 +1,4 @@
-function wai(x,timeVec,lowest,nvoice,mark,maxima,l,flag)
+function [WAI,MEAN] = wai(x,timeVec,freqVec,nvoice,mark,maxima,flag,grafunc)
 
 %
 %--------------------------------------------------------------------------------
@@ -8,183 +8,146 @@ function wai(x,timeVec,lowest,nvoice,mark,maxima,l,flag)
 %
 % Function Definition
 %
-% wai(x,timeVec,lowest,nvoice,mark,maxima,l,flag)
+% [WAI,MEAN] = wai(x,timeVec,freqVec,nvoice,mark,maxima,flag,grafunc)
 %
 % INPUT       TYPE        MEANING
 % -----       ----        -------
 % x        -> matrix   -> Continuous Wavelet Modulus
 % timeVec  -> array    -> Time Vector
-% lowest   -> scalar   -> Lowest Frequency Taken into Account
+% freqVec  -> array    -> Frequency Vector
 % nvoice   -> scalar   -> Lines of Pixel per Octave
 % mark     -> array    -> Time Marker Set (Step Number)
-% maxima   -> matrix   -> 3rd-4th paths Output - Maxima Coordinate
-% l        -> scalar   -> Mean Filter Window Width
+% maxima   -> matrix   -> paths.m Output - Maxima Coordinates
 % flag     -> scalar   -> 0 = Thresholded WAI / 1 = NO Threshold
+% grafunc  -> boolean  -> Enable Graphical Functions
 %
 % OUTPUT      TYPE        MEANING
 % ------      ----        -------
-% -none-   -> plot     -> Plot Resulting from Analysis
+% WAI      -> matrix   -> Activity Index Values
+% MEAN     -> matrix   -> Time Averaged Activity
+% -none-   -> plot     -> 1/2 Plot Resulting from Analysis
 %
 
-% l = Regularization Window Width = Mean Convolutive Filter
+% Graphic Parameters
+s1 = 16; % X-Y TickLabel Size
+s2 = 19; % X-Y Label and Text Size
+s3 = 24; % Title Size
+
+nscale = size(x,1);
+n = size(x,2);
+
+% l = Regularization window width - Mean convolutive filter
 % l value must be odd! - l=1 means NO FILTER
+l = 7;
 
-n = size(x)(2);
+% Frequency matrix for the Complete WAI
+freqVecComp = freqVec(end).*2.^(-([0:1:nscale-1])./nvoice);
+freqVecComp = freqVecComp';
+freqVecComp = flipud(freqVecComp);
+freqVecComp = freqVecComp*ones(1,size(x,2));
 
-WAI1=[];
-WAI2=[];
-WAI3=[];
+if isempty(maxima) % Complete WAIs
+	WAI(1,:) = (10^5)*sum(x.^2)/(nvoice);
+	WAI(2,:) = (10^4)*sum(log2(freqVecComp).*(x.^2))/(nvoice);
+	WAI(3,:) = (10^3)*sum(freqVecComp.*(x.^2))/(nvoice);
+else % Maxima WAIs
+	WAI(1,:) = (10^5)*sum((x.*maxima).^2);
+	WAI(2,:) = (10^4)*sum((log2(freqVecComp).*((x.*maxima).^2)));
+	WAI(3,:) = (10^3)*sum((freqVecComp.*((x.*maxima).^2)));
+	
+	% Smoothing convolution
+	WAItemp = WAI;
+	for h = 1:n-l+1
+		WAI(:,h+(l-1)/2) = (1./l)*sum(WAItemp(:,h:h+l-1),2);
+	end
+end
 
-% Input Control
-if (mark(1) <= (l-1)/2)
-	printf("\nWARNING!\nFirst mark before Regularization-Window-Half-Width\n\n");
-	return
-endif
+% Mean values
+if (length(mark) > 0)
+	MEAN(:,1) = (1/mark(1))*sum(WAI(:,1:mark(1)),2);
+	if (length(mark) > 1)
+		for h = 2:length(mark)
+			MEAN(:,h) = (1/(mark(h)-mark(h-1)+1))*sum(WAI(:,mark(h-1):mark(h)),2);
+		end
+	end
+	MEAN(:,length(mark)+1) = (1/(n-mark(end)+1))*sum(WAI(:,mark(end):end),2);
+	MEAN = floor(MEAN*100)/100; % In order to get only 2 decimal digits
+else
+	MEAN(:,1) = (1/size(WAI,2))*sum(WAI,2);
+end
 
-% Indexes
-for h = 1:n
-	m = find(maxima(:,h));
-	WAI1(h) = sum(x(m,h).**2);
-	WAI2(h) = sum(log2(lowest*2.**(m/nvoice)).*(x(m,h).**2));
-	WAI3(h) = sum((lowest*2.**(m/nvoice)).*(x(m,h).**2));
-endfor
-
-% Convolution and Scale Factor
-for h = 1:n-l+1
-	WAI1(h) = (1./l)*sum(WAI1(h:h+l-1))*(10**5);
-	WAI2(h) = (1./l)*sum(WAI2(h:h+l-1))*(10**4);
-	WAI3(h) = (1./l)*sum(WAI3(h:h+l-1))*(10**3);
-endfor
-
-WAI1 = WAI1(1:n-l+1);
-WAI2 = WAI2(1:n-l+1);
-WAI3 = WAI3(1:n-l+1);
-
-% Mean Values
-c{1} = WAI1(1:mark(1)-(l-1)/2); % Cell Arrays
-MEAN1(1) = (1./(mark(1)-(l-1)/2))*sum(c{1});
-if (length(mark) > 1)
-	for h = 2:length(mark)
-		c{h} = WAI1(mark(h-1)-(l-1)/2:mark(h)-(l-1)/2);
-		MEAN1(h) = (1./(mark(h)-mark(h-1)+1))*sum(c{h});
-	endfor
-endif
-c{length(c)+1} = WAI1(mark(end)-(l-1)/2:end);
-MEAN1 = [MEAN1,(1./(length(timeVec)-(l-1)-(mark(end)-(l-1)/2)+1))*sum(c{end})];
-d1 = MEAN1(2)/MEAN1(1);
-d1 = floor(d1*100)/100; % In order to have only 2 decimal digits
-%MEAN1 = floor(MEAN1*10)/10; % In order to have only 1 decimal digits
-MEAN1 = floor(MEAN1*100)/100; % In order to have only 2 decimal digits
-
-c{1} = WAI2(1:mark(1)-(l-1)/2); % Cell Arrays
-MEAN2(1) = (1./(mark(1)-(l-1)/2))*sum(c{1});
-if (length(mark) > 1)
-	for h = 2:length(mark)
-		c{h} = WAI2(mark(h-1)-(l-1)/2:mark(h)-(l-1)/2);
-		MEAN2(h) = (1./(mark(h)-mark(h-1)+1))*sum(c{h});
-	endfor
-endif
-c{length(c)+1} = WAI2(mark(end)-(l-1)/2:end);
-MEAN2 = [MEAN2,(1./(length(timeVec)-(l-1)-(mark(end)-(l-1)/2)+1))*sum(c{end})];
-d2 = MEAN2(2)/MEAN2(1);
-d2 = floor(d2*100)/100; % In order to have only 2 decimal digits
-%MEAN2 = floor(MEAN2*10)/10; % In order to have only 1 decimal digits
-MEAN2 = floor(MEAN2*100)/100; % In order to have only 2 decimal digits
-
-c{1} = WAI3(1:mark(1)-(l-1)/2); % Cell Arrays
-MEAN3(1) = (1./(mark(1)-(l-1)/2))*sum(c{1});
-if (length(mark) > 1)
-	for h = 2:length(mark)
-		c{h} = WAI3(mark(h-1)-(l-1)/2:mark(h)-(l-1)/2);
-		MEAN3(h) = (1./(mark(h)-mark(h-1)+1))*sum(c{h});
-	endfor
-endif
-c{length(c)+1} = WAI3(mark(end)-(l-1)/2:end);
-MEAN3 = [MEAN3,(1./(length(timeVec)-(l-1)-(mark(end)-(l-1)/2)+1))*sum(c{end})];
-d3 = MEAN3(2)/MEAN3(1);
-d3 = floor(d3*100)/100; % In order to have only 2 decimal digits
-%MEAN3 = floor(MEAN3*10)/10; % In order to have only 1 decimal digits
-MEAN3 = floor(MEAN3*100)/100; % In order to have only 2 decimal digits
-
-% Plot Indexes
-timeVec2 = timeVec(((l-1)/2)+1:end-((l-1)/2));
-
-subplot(3,2,1+flag), hold on
-plot(timeVec2,WAI1)
-for k = 1:length(mark)
-		plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
-endfor
-axis([timeVec2(1),timeVec2(end)])
-set(gca,'XTick',[floor(timeVec2(2)),get(gca,'XTick'),floor(timeVec2(end))]);
-% If timeVec2(1) is not an integer floor(timeVec2(1)) results too small to be displayed
-if (flag == 0)
-	ylabel('Index I','FontSize',18)
-endif
-text(timeVec((l-1)/2+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN1(1))],'FontSize',18,'Color','k')
-if (length(mark) > 1)
-	for h = 2:length(mark)
-		text(timeVec(mark(h-1)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN1(h))],'FontSize',18,'Color','k')
-	endfor
-endif
-text(timeVec(mark(end)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN1(end))],'FontSize',18,'Color','k')
-text(max(xlim)+15,max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(d1)],'FontSize',18,'Color','r')
-
-subplot(3,2,3+flag), hold on
-plot(timeVec2,WAI2)
-for k = 1:length(mark)
-		plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
-endfor
-axis([timeVec2(1),timeVec2(end)])
-set(gca,'XTick',[floor(timeVec2(2)),get(gca,'XTick'),floor(timeVec2(end))]);
-if (flag == 0)
-	ylabel('Index Y','FontSize',18)
-endif
-text(timeVec((l-1)/2+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN2(1))],'FontSize',18,'Color','k')
-if (length(mark) > 1)
-	for h = 2:length(mark)
-		text(timeVec(mark(h-1)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN2(h))],'FontSize',18,'Color','k')
-	endfor
-endif
-text(timeVec(mark(end)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN2(end))],'FontSize',18,'Color','k')
-text(max(xlim)+15,max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(d2)],'FontSize',18,'Color','r')
-
-subplot(3,2,5+flag), hold on
-plot(timeVec2,WAI3)
-for k = 1:length(mark)
-		plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
-endfor
-axis([timeVec2(1),timeVec2(end)])
-set(gca,'XTick',[floor(timeVec2(2)),get(gca,'XTick'),floor(timeVec2(end))]);
-if (flag == 0)
-	ylabel('Index J','FontSize',18)
-endif
-xlabel('Time (s)','FontSize',18)
-text(timeVec((l-1)/2+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN3(1))],'FontSize',18,'Color','k')
-if (length(mark) > 1)
-	for h = 2:length(mark)
-		text(timeVec(mark(h-1)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN3(h))],'FontSize',18,'Color','k')
-	endfor
-endif
-text(timeVec(mark(end)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN3(end))],'FontSize',18,'Color','k')
-text(max(xlim)+15,max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(d3)],'FontSize',18,'Color','r')
-
-subplot(3,2,1+flag), hold on
+% Enable graphical functions
+if (grafunc)
+	
+	for g = 1:3
+		subplot(3,2,(2*g-1)+flag), hold on
+			
+			plot(timeVec,WAI(g,:),'-b','LineWidth',1)
+			
+			xlim([timeVec(1),timeVec(end)])
+			set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
+			if (flag == 0)
+				switch (g)
+					case 1
+						ylabel('Index I','FontSize',s2)
+					case 2
+						ylabel('Index Y','FontSize',s2)
+					case 3
+						ylabel('Index J','FontSize',s2)
+				end
+			end
+			if (g == 3)
+				xlabel('Time (s)','FontSize',s2)
+			end
+			
+			if (length(mark) > 0)
+				text(timeVec(15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN(g,1))],'FontSize',s2,'Color','k')
+				if (length(mark) > 1)
+					for h = 2:length(mark)
+						text(timeVec(mark(h-1)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN(g,h))],'FontSize',s2,'Color','k')
+					end
+				end
+				text(timeVec(mark(end)+15),max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(MEAN(g,end))],'FontSize',s2,'Color','k')
+				
+				r = MEAN(g,2)/MEAN(g,1);
+				r = floor(r*100)/100; % In order to get only 2 decimal digits
+				text(max(xlim)+15,max(ylim)-(max(ylim)-min(ylim))*(15/100),[num2str(r)],'FontSize',s2,'Color','r')
+			end
+			
+			for k = 1:length(mark) % If length(mark)==0 this does nothing
+					plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
+			end
+	end
+	
+	subplot(3,2,1+flag), hold on
+	
+end
 
 
-%---------------------------------------------------------------------%
-%                                                                     %
-% A.A. 2009/2010 - 2010/2011                                          %
-% Original code by Federico Alessandro Ruffinatti                     %
-% Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
-% Scuola di Dottorato in Neuroscienze - XXV ciclo                     %
-%                                                                     %
-% Wavelet computation is regarded as a time convolution and it is     %
-% implemented as a product in the Fourier transformed domain.         %
-% A standard code for this algorithm can be found, for instance,      %
-% in WaveLab850 - http://www-stat.stanford.edu/~wavelab/              %
-%                                                                     %
-% Peaks detection uses a technique that is based on images dilation.  %
-% See, for instance, localMaximum.m m-file by Yonathan Nativ          %
-% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/  %
-%                                                                     %
-%---------------------------------------------------------------------%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%
+%%                                                                                                      %%
+%% KYM Project                                                                                          %%
+%% -----------                                                                                          %%
+%% First Released in 2010                                                                               %%
+%% Original code by Federico Alessandro Ruffinatti                                                      %%
+%%                                                                                                      %%
+%% UNIVERSITY OF TORINO                                                                                 %%
+%% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
+%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
+%% Department of Life Sciences and Systems Biology                                                      %%
+%% Laboratory of Cellular Neurophysiology                                                               %%
+%% Via Accademia Albertina 13 10123 Torino                                                              %%
+%%                                                                                                      %%
+%% Acknowledgements:                                                                                    %%
+%% -----------------                                                                                    %%
+%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
+%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% http://www-stat.stanford.edu/~wavelab/                                                               %%
+%%                                                                                                      %%
+%% Peaks detection uses a technique that is based on images dilation.                                   %%
+%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
+%%                                                                                                      %%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%

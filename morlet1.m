@@ -23,7 +23,7 @@ function [mor,fac] = morlet1(Y,sigma2,lft,nvoice)
 % fac      -> scalar   -> COI e-folding Factor
 %
 
-% Frequency Shift - Useful for Calibration
+% Frequency shift - Useful for calibration
 fs = 6.4;
 
 n = length(Y);
@@ -45,42 +45,52 @@ for jo = 1:noctave
 		a = scale*(2^(jv/nvoice));
 		freq = (fs - a*omega);
 		% Time convolution as product in the transformed domain
-		Psi = exp(-(sigma2/2)*freq.**2);
+		Psi = exp(-(sigma2/2)*freq.^2);
 		Psi = Psi.*(omega > 0);
 		mor(1:n,kscale) = ifft(Y.*Psi);
 		kscale = kscale+1;
 	
-	endfor
+	end
 	
 	scale = scale*2;
 
-endfor
+end
 
 % Normalization
-mor = ((sigma2/pi)**(1/4))*mor;
+mor = ((sigma2/pi)^(1/4))*mor;
 
 % The matrix mor is ordered from high to low frequencies
 mor = mor';
 mor = flipud(mor);
 
-% Cone of Influence e-folding Factor
+% Cone of influence e-folding factor
 fac = (sqrt(sigma2)*fs)/(sqrt(2)*pi);
 
 
-%---------------------------------------------------------------------%
-%                                                                     %
-% A.A. 2009/2010 - 2010/2011                                          %
-% Original code by Federico Alessandro Ruffinatti                     %
-% Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
-% Scuola di Dottorato in Neuroscienze - XXV ciclo                     %
-%                                                                     %
-% Wavelet computation is regarded as a time convolution and it is     %
-% implemented as a product in the Fourier transformed domain.         %
-% A standard code for this algorithm can be found, for instance,      %
-% in WaveLab850 - http://www-stat.stanford.edu/~wavelab/              %
-%                                                                     %
-% Peaks detection uses a technique that is based on images dilation.  %
-% See, for instance, localMaximum.m m-file by Yonathan Nativ          %
-% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/  %
-%                                                                     %
-%---------------------------------------------------------------------%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%
+%%                                                                                                      %%
+%% KYM Project                                                                                          %%
+%% -----------                                                                                          %%
+%% First Released in 2010                                                                               %%
+%% Original code by Federico Alessandro Ruffinatti                                                      %%
+%%                                                                                                      %%
+%% UNIVERSITY OF TORINO                                                                                 %%
+%% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
+%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
+%% Department of Life Sciences and Systems Biology                                                      %%
+%% Laboratory of Cellular Neurophysiology                                                               %%
+%% Via Accademia Albertina 13 10123 Torino                                                              %%
+%%                                                                                                      %%
+%% Acknowledgements:                                                                                    %%
+%% -----------------                                                                                    %%
+%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
+%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% http://www-stat.stanford.edu/~wavelab/                                                               %%
+%%                                                                                                      %%
+%% Peaks detection uses a technique that is based on images dilation.                                   %%
+%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
+%%                                                                                                      %%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%

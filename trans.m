@@ -1,68 +1,46 @@
-function [mor,fac] = morlet2(Y,sigma2,lft,nvoice)
+function [wt,fac] = trans(y,lft,nvoice,wavelet)
 
 %
 %--------------------------------------------------------------------------------
-% Morlet Wavelet ver.2
+% Wavelet Transform Computation
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% [mor,fac] = morlet2(Y,sigma2,lft,nvoice)
+% [wt,fac] = trans(y,lft,nvoice,wavelet)
 %
 % INPUT       TYPE        MEANING
 % -----       ----        -------
-% Y        -> array    -> Signal FFT
-% sigma2   -> scalar   -> Time/Frequency Resolution Tradeoff
+% y        -> scalar   -> Signal to Be Transformed
 % lft      -> scalar   -> Low-Frequency Threshold
 % nvoice   -> scalar   -> Amount of Inter-Octave Frequencies
+% wavelet  -> string   -> Mother Wavelet Type
 %
-% OUTPUT      TYPE        MEANING
-% ------      ----        -------
-% mor      -> matrix   -> Morlet Wavelet Transform
+% OUTPUT      TYPE         MEANING
+% ------      ----         -------
+% wt       -> matrix   -> Wavelet Transform of y
 % fac      -> scalar   -> COI e-folding Factor
 %
 
-% Frequency shift - Useful for calibration
-fs = 7.4;
+% Fourier Transform of the signal
+Y = fft(y);
 
-n = length(Y);
-
-omega = [(0:(n/2)),(((-n/2)+1):-1)]*(2*pi/n);
-omega = omega(:);
-
-noctave = floor(log2(n))-lft;
-nscale = nvoice*noctave;
-mor = zeros(n,nscale);
-
-kscale = 1;
-scale = 2^(lft-1);
-
-for jo = 1:noctave
+switch (wavelet)
 	
-	for jv = 1:nvoice
+	case 'M1' % Morlet Wavelet ver.1
 		
-		a = scale*(2^(jv/nvoice));
-		freq = n*(omega/a);
-		% Time convolution as product in the transformed domain
-		Psi = exp(-(sigma2/2)*(freq - fs).^2) - exp(-(freq.^2 + fs.^2)/2);
-		mor(1:n,kscale) = ifft(Y.*Psi);
-		kscale = kscale+1;
+		[wt,fac] = morlet1(Y,2,lft,nvoice);
 	
-	end
+	case 'M2' % Morlet Wavelet ver.2
+		
+		[wt,fac] = morlet2(Y,1.5,lft,nvoice);
 	
-	scale = scale*2;
-
+	case 'M3' % Morlet Wavelet ver.3
+		
+		[wt,fac] = morlet3(Y,1.5,lft,nvoice);
+		
 end
-
-% Normalization
-mor = ((1+exp(-fs^2)-2*exp(-(3/4)*fs^2))^(-(1/2)))*((sigma2/pi)^(1/4))*mor;
-
-% The matrix mor is ordered from low to high frequencies 
-mor = mor';
-
-% Cone of influence e-folding factor
-fac = (sqrt(sigma2)*fs)/(sqrt(2)*pi);
 
 
 %%------------------------------------------------------------------------------------------------------%%

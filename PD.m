@@ -22,205 +22,216 @@ function ratio = PD(wt,par,sig,thr1,thr2,output)
 % OUTPUT      TYPE         MEANING
 % ------      ----         -------
 % ratio    -> array     -> post/pre Spectrum Ratio Vector
-% -none-   -> plot      -> 6 Plots Resulting from Analysis
+% -none-   -> plot      -> 8 Plots Resulting from Analysis
 %
 
-% Variables Assignment
+%---------------------------------------------------------------------------
+% Graphic Parameters
+%---------------------------------------------------------------------------
+
+s1 = 16; % X-Y TickLabel size
+s2 = 19; % X-Y Label and text size
+s3 = 24; % Title size
+
+%---------------------------------------------------------------------------
+% Default Output
+%---------------------------------------------------------------------------
+
+ratio = [];
+
+%---------------------------------------------------------------------------
+% Variable Assignment
+%---------------------------------------------------------------------------
+
 coimask = par.k;
 timeVec = par.x;
 freqVec = par.y;
 periodVec = par.z;
-lowest = freqVec(end)/(2**(length(freqVec)-1));
 mark = par.m;
 
 x = abs(wt);
 y = abs(real(wt));
 
-nscale = size(x)(1);
-nvoice = (size(x)(1))/(length(freqVec)-1);
-n = size(x)(2);
+nscale = size(x,1);
+nvoice = (size(x,1))/(length(freqVec)-1);
+n = size(x,2);
 
-% Output Print control - Default value = false
+%---------------------------------------------------------------------------
+% Input Control
+%---------------------------------------------------------------------------
+
+% Print plots - Default value = false = Print nothing
 if (nargin < 6)
 	output = false;
-endif
-% Threshold control - Default value = 0
+end
+
+% Thresholds - Default value = 0
 if (nargin < 5)
 	thr2 = 0;
-endif
+end
 if (nargin < 4)
 	thr1 = 0;
-endif
+end
 
+%--------------------------------------------------------------------------------
+% CWT Analysis: selectively enable/disable each one of the following features
+%--------------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------------
 % Wavelet Power Spectrum
 %--------------------------------------------------------------------------------
 
-figure
-
-energy(x,coimask,timeVec,freqVec,nvoice,mark)
-
-% Print output graph
-if (output)
-	print -depsc energyout.eps
-endif
+if 1
+	figure
+	
+	energy(x,coimask,timeVec,freqVec,nvoice,mark)
+	
+	% Print output graph
+	if (output)
+		print -depsc energyout.eps
+	end
+end
 
 %--------------------------------------------------------------------------------
 % Fourier Spectrum vs. Wavelet Energy Density
 %--------------------------------------------------------------------------------
 
-figure
-
-fourier(x,coimask,sig,freqVec,1,1)
-
-title(['Fourier Spectrum vs. Wavelet Energy Density - ROI ',num2str(par.r)],'FontSize',18)
-
-% Print output graph
-if (output)
-	print -depsc fourierout.eps
-endif
+if 1
+	figure
+	
+	fourier(x,coimask,sig,freqVec,1,1)
+	
+	title(['Fourier Spectrum vs. Wavelet Energy Density - ROI ',num2str(par.r)],'FontSize',s3)
+	
+	% Print output graph
+	if (output)
+		print -depsc fourierout.eps
+	end
+end
 
 %--------------------------------------------------------------------------------
 % CWT Peaks Detection
 %--------------------------------------------------------------------------------
 
-figure
-
-peak(x,coimask,thr1,timeVec,freqVec,mark,5,false)
-
-title([num2str(thr1),'% Thresholded - Continuous Wavelet Transform Peaks Detection - ROI ',num2str(par.r)],'FontSize',18)
-
-% Print output graph
-if (output)
-	print -depsc maximaout.eps
-endif
+if 1
+	figure
+	
+	peak(x,coimask,thr1,timeVec,freqVec,mark,5,false)
+	
+	title([num2str(thr1),'% Thresholded - Continuous Wavelet Transform Peak Detection - ROI ',num2str(par.r)],'FontSize',s3)
+	
+	% Print output graph
+	if (output)
+		print -depsc maximaout.eps
+	end
+end
 
 %--------------------------------------------------------------------------------
 % CWT Frequency Paths
 %--------------------------------------------------------------------------------
 
-figure
-
-[maxmap1,maxmap2,maxima,maximaNT] = paths(x,y,coimask,thr2,mark,5,false);
-
-subplot(2,1,1), hold on
-imagesc(timeVec,[],maxmap1)
-set(gca,'XTick',[get(gca,'XTick'),floor(timeVec(end))]);
-set(gca,'YDir','normal');
-set(gca,'YTick',[0:nvoice:nscale]); % Maximum number of displayable ticks on ordinates
-set(gca,'YTick',[get(gca,'YTick'),1]); % In order to display freqVec(1) value
-set(gca,'YTickLabel',freqVec);
-ylabel('Frequency (mHz)','FontSize',18)
-title([num2str(thr2),'% Thresholded - Continuous Wavelet Transform Frequency Paths - ROI ',num2str(par.r)],'FontSize',18)
-
-subplot(2,1,2), hold on
-imagesc(timeVec,[],maxmap2)
-set(gca,'XTick',[get(gca,'XTick'),floor(timeVec(end))]);
-set(gca,'YDir','normal');
-set(gca,'YTick',[0:nvoice:nscale]); % Maximum number of displayable ticks on ordinates
-set(gca,'YTick',[get(gca,'YTick'),1]); % In order to display freqVec(1) value
-set(gca,'YTickLabel',freqVec);
-ylabel('Frequency (mHz)','FontSize',18)
-xlabel('Time (s)','FontSize',18)
-
-% Print output graph
-if (output)
-	print -depsc pathout.eps
-endif
+if 1
+	figure
+	
+	[maxima,maximaNT] = paths(x,y,coimask,thr2,timeVec,freqVec,mark,5,false,true);
+	
+	title([num2str(thr2),'% Thresholded - Continuous Wavelet Transform Frequency Paths - ROI ',num2str(par.r)],'FontSize',s3)
+	
+	% Print output graph
+	if (output)
+		print -depsc pathout.eps
+	end
+end
 
 %--------------------------------------------------------------------------------
 % CWT Wave-Activity Index - WAI
 %--------------------------------------------------------------------------------
 
-figure
-
-% l = Regularization Window Width = Mean Convolutive Filter
-% l value must be odd! - l=1 means NO FILTER
-l = 7;
-
-% Threshold Index
-wai(x,timeVec,lowest,nvoice,mark,maxima,l,0)
-
-title([num2str(thr2),'% Thresholded WAI'],'FontSize',18)
-
-% NO Threshold Index
-wai(x,timeVec,lowest,nvoice,mark,maximaNT,l,1)
-
-title('NO Thresholded WAI','FontSize',18)
-
-% Print output graph
-if (output)
-	print -depsc indexout.eps
-endif
+if 1
+	figure
+	
+	% Thresholded index
+	wai(x,timeVec,freqVec,nvoice,mark,maxima,0,true);
+	
+	title([num2str(thr2),'% Thresholded WAI'],'FontSize',s3)
+	
+	% NON Thresholded index
+	wai(x,timeVec,freqVec,nvoice,mark,maximaNT,1,true);
+	
+	title('NO Thresholded WAI','FontSize',s3)
+	
+	% Print output graph
+	if (output)
+		print -depsc indexout.eps
+	end
+end
 
 %--------------------------------------------------------------------------------
-% CWT Complete Wave-Activity Index - CompWAI
+% CWT Complete Wave-Activity Index - Complete-WAI
 %--------------------------------------------------------------------------------
 
-figure
-
-% Threshold Index
-
-minimox = min(min(x));
-xt = x - minimox;
-massimox = max(max(xt));
-xt = xt / massimox;
-
-threshold = thr2/100;
-
-xt = (xt >= threshold);
-xt = x .* xt;
-
-waiComp(xt,coimask,timeVec,freqVec,nvoice,mark,0)
-
-title([num2str(thr2),'% Thresholded Complete-WAI'],'FontSize',18)
-
-% NO Threshold Index
-
-waiComp(x,coimask,timeVec,freqVec,nvoice,mark,1)
-
-title('NO Thresholded Complete-WAI','FontSize',18)
-
-% Print output graph
-if (output)
-	print -depsc indexcompout.eps
-endif
+if 1
+	figure
+	
+	% Thresholded index
+	wtabst = (x-min(min(x)))/max(max(x-min(min(x))));
+	threshold = thr2/100;
+	wtabst = (wtabst >= threshold);
+	wtabs = x .* wtabst .* coimask;
+	wtabsNT = x .* coimask;
+	
+	wai(wtabs,timeVec,freqVec,nvoice,mark,[],0,true);
+	
+	title([num2str(thr2),'% Thresholded Complete-WAI'],'FontSize',s3)
+	
+	% NON Thresholded index
+	wai(wtabsNT,timeVec,freqVec,nvoice,mark,[],1,true);
+	
+	title('NO Thresholded Complete-WAI','FontSize',s3)
+	
+	% Print output graph
+	if (output)
+		print -depsc indexcompout.eps
+	end
+end
 
 %--------------------------------------------------------------------------------
 % CWT Vector Approach
 %--------------------------------------------------------------------------------
 
-if (length(mark) < 3)
-	
-	figure
-	
-	ratio = vector(x,coimask,freqVec,periodVec,mark);
-	
-	title(['Continuous Wavelet Transform Vector Analysis - ROI ',num2str(par.r)],'FontSize',18)
-	
-	% Print output graph
-	if (output)
-		print -depsc vectorout.eps
-	endif
-	
-endif
+if 1
+	if (length(mark) > 0)
+		
+		ratio = vector(x,coimask,freqVec,periodVec,mark,par.r,output);
+		
+	end
+end
 
 
-%---------------------------------------------------------------------%
-%                                                                     %
-% A.A. 2009/2010 - 2010/2011                                          %
-% Original code by Federico Alessandro Ruffinatti                     %
-% Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
-% Scuola di Dottorato in Neuroscienze - XXV ciclo                     %
-%                                                                     %
-% Wavelet computation is regarded as a time convolution and it is     %
-% implemented as a product in the Fourier transformed domain.         %
-% A standard code for this algorithm can be found, for instance,      %
-% in WaveLab850 - http://www-stat.stanford.edu/~wavelab/              %
-%                                                                     %
-% Peaks detection uses a technique that is based on images dilation.  %
-% See, for instance, localMaximum.m m-file by Yonathan Nativ          %
-% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/  %
-%                                                                     %
-%---------------------------------------------------------------------%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%
+%%                                                                                                      %%
+%% KYM Project                                                                                          %%
+%% -----------                                                                                          %%
+%% First Released in 2010                                                                               %%
+%% Original code by Federico Alessandro Ruffinatti                                                      %%
+%%                                                                                                      %%
+%% UNIVERSITY OF TORINO                                                                                 %%
+%% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
+%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
+%% Department of Life Sciences and Systems Biology                                                      %%
+%% Laboratory of Cellular Neurophysiology                                                               %%
+%% Via Accademia Albertina 13 10123 Torino                                                              %%
+%%                                                                                                      %%
+%% Acknowledgements:                                                                                    %%
+%% -----------------                                                                                    %%
+%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
+%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% http://www-stat.stanford.edu/~wavelab/                                                               %%
+%%                                                                                                      %%
+%% Peaks detection uses a technique that is based on images dilation.                                   %%
+%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
+%%                                                                                                      %%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%

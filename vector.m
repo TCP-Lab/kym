@@ -1,4 +1,4 @@
-function ratio = vector(x,coimask,freqVec,periodVec,mark)
+function vratio = vector(x,coimask,freqVec,periodVec,mark,roi,output)
 
 %
 %--------------------------------------------------------------------------------
@@ -8,7 +8,7 @@ function ratio = vector(x,coimask,freqVec,periodVec,mark)
 %
 % Function Definition
 %
-% ratio = vector(x,coimask,freqVec,periodVec,mark)
+% vratio = vector(x,coimask,freqVec,periodVec,mark,roi,output)
 %
 % INPUT        TYPE        MEANING
 % -----        ----        -------
@@ -17,138 +17,186 @@ function ratio = vector(x,coimask,freqVec,periodVec,mark)
 % freqVec   -> array    -> Frequency Vector
 % periodVec -> array    -> Period Vector
 % mark      -> array    -> Time Marker Set (Step Number)
+% roi       -> scalar   -> Current ROI
+% output    -> boolean  -> Print .eps Output Graphs
 %
 % OUTPUT       TYPE        MEANING
 % ------       ----        -------
-% ratio     -> array    -> post/pre Spectrum Ratio Vector
-% -none-    -> plot     -> Plot Resulting from Analysis
+% vratio    -> array    -> post/pre Spectrum Ratio Vector
+% -none-    -> plot     -> 2 Plots Resulting from Analysis
 %
 
-n = size(x)(2);
-nscale = size(x)(1);
-nvoice = (size(x)(1))/(length(freqVec)-1);
+% Graphic Parameters
+s1 = 16; % X-Y TickLabel Size
+s2 = 19; % X-Y Label and Text Size
+s3 = 24; % Title Size
+
+n = size(x,2);
+nscale = size(x,1);
+nvoice = (size(x,1))/(length(freqVec)-1);
 
 x = x .* coimask;
 
-pre = sum(x(:,1:mark(1)),2);
-pre = 1000*pre/(mark(1));
-
+v(1,:) = 1000*(sum(x(:,1:mark(1)),2)/(mark(1)))';
 if (length(mark) > 1)
+	for h = 2:length(mark)
+		v(h,:) = 1000*(sum(x(:,mark(h-1):mark(h)),2)/(mark(h)-mark(h-1)+1))';
+	end
+end
+v(length(mark)+1,:) = 1000*(sum(x(:,mark(end):end),2)/(n-mark(end)+1))';
+
+vratio = v(2,:)./v(1,:);
+vratio(find(isnan(vratio) | isinf(vratio))) = 0; % Prevent to NaN and Inf from being plotted
+
+% Plotting
+figure
+
+for k = 1:(length(mark)+1)
 	
-	mid = sum(x(:,mark(1):mark(2)),2);
-	mid = 1000*mid/(mark(2)-mark(1)+1);
+	hold on
+	p = plot([1:nscale],v(k,:),'-b','LineWidth',1);
 	
-	dist1 = sqrt(sum(abs(mid-pre).**2)/(nvoice));
-	normpre = sqrt(sum(abs(pre).**2)/(nvoice));
-	normmid = sqrt(sum(abs(mid).**2)/(nvoice));
-	delta1 = (normmid-normpre);
-	theta1 = acos((sum(mid.*pre)/(nvoice))/(normmid*normpre));
-	theta1 = (theta1/(pi))*180; % Radians -> Degrees conversion
+	% Blue->Red color gradient
+	col(k,:) = [(k-1)/length(mark),0,(length(mark)+1-k)/length(mark)]; % Color code
+	set(p,'Color',col(k,:))
+	lgn{k} = ['W_',num2str(k)]; % Cell Arrays
 	
-	dist1 = floor(dist1*100)/100; % In order to have only 2 decimal digits
-	delta1 = floor(delta1*100)/100; % In order to have only 2 decimal digits
-	theta1 = floor(theta1*100)/100; % In order to have only 2 decimal digits
+end
 
-endif
+xlim([1,nscale])
+q = ylim;
+set(gca,'FontSize',s1,'XTick',unique([1,nvoice:nvoice:nscale])); % Element 1 is needed to display freqVec(1) value
+set(gca,'XTickLabel',num2str(freqVec'));
+xlabel('Frequency (mHz)','FontSize',s2)
+ylabel('10^3 V Amplitude','FontSize',s2)
 
-post = sum(x(:,mark(end):end),2);
-post = 1000*post/(n-mark(end)+1);
+mylegend = legend(lgn,'Location','East');
+set(mylegend,'FontSize',s1);
 
-if (length(mark) > 1)
-	ratio = mid./pre;
-	ratio = ratio(:)';
-elseif (length(mark) == 1)
-	ratio = post./pre;
-	ratio = ratio(:)';
-endif
-
-% Prevent to NaN and Inf from being plotted
-ratio(find(isnan(ratio) | isinf(ratio))) = 0;
-
-dist2 = sqrt(sum(abs(post-pre).**2)/(nvoice));
-normpre = sqrt(sum(abs(pre).**2)/(nvoice));
-normpost = sqrt(sum(abs(post).**2)/(nvoice));
-delta2 = (normpost-normpre);
-theta2 = acos((sum(post.*pre)/(nvoice))/(normpost*normpre));
-theta2 = (theta2/(pi))*180; % Radians -> Degrees conversion
-
-dist2 = floor(dist2*100)/100; % In order to have only 2 decimal digits
-delta2 = floor(delta2*100)/100; % In order to have only 2 decimal digits
-theta2 = floor(theta2*100)/100; % In order to have only 2 decimal digits
-
-if (length(mark) > 1)
-	
-	dist3 = sqrt(sum(abs(post-mid).**2)/(nvoice));
-	delta3 = (normpost-normmid);
-	theta3 = acos((sum(post.*mid)/(nvoice))/(normpost*normmid));
-	theta3 = (theta3/(pi))*180; % Radians -> Degrees conversion
-	
-	dist3 = floor(dist3*100)/100; % In order to have only 2 decimal digits
-	delta3 = floor(delta3*100)/100; % In order to have only 2 decimal digits
-	theta3 = floor(theta3*100)/100; % In order to have only 2 decimal digits
-
-endif
-
-plot(pre,'-b'), hold on
-if (length(mark) > 1)
-	plot(mid,'-g')
-endif
-plot(post,'-r')
-axis([0,nscale])
-set(gca,'XTick',[0:nvoice:nscale]);
-set(gca,'XTickLabel',freqVec);
-xlabel('Frequency (mHz)','FontSize',18)
-ylabel('W Amplitude x 1000','FontSize',18)
-set(gca,'position',[0.130,0.110,0.775,0.68])
-
-if (length(mark) > 1)
-	legend('pre','mid','post','Location','East')
-elseif (length(mark) == 1)
-	legend('pre','post','Location','East')
-endif
-
-text(max(xlim)*(80/100),max(ylim)-(max(ylim)-min(ylim))*(5/100),['pre vs. post'],'FontSize',16,'Color','r')
-text(max(xlim)*(80/100),max(ylim)-(max(ylim)-min(ylim))*(10/100),['D = ', num2str(dist2)],'FontSize',16,'Color','k')
-text(max(xlim)*(80/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['Delta = ', num2str(delta2)],'FontSize',16,'Color','k')
-text(max(xlim)*(80/100),max(ylim)-(max(ylim)-min(ylim))*(20/100),['Theta = ', num2str(theta2), '°'],'FontSize',16,'Color','k')
-
-if (length(mark) > 1)
-	
-	text(max(xlim)*(60/100),max(ylim)-(max(ylim)-min(ylim))*(5/100),['mid vs. post'],'FontSize',16,'Color','r')
-	text(max(xlim)*(60/100),max(ylim)-(max(ylim)-min(ylim))*(10/100),['D = ', num2str(dist3)],'FontSize',16,'Color','k')
-	text(max(xlim)*(60/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['Delta = ', num2str(delta3)],'FontSize',16,'Color','k')
-	text(max(xlim)*(60/100),max(ylim)-(max(ylim)-min(ylim))*(20/100),['Theta = ', num2str(theta3), '°'],'FontSize',16,'Color','k')
-	
-	text(max(xlim)*(40/100),max(ylim)-(max(ylim)-min(ylim))*(5/100),['pre vs. mid'],'FontSize',16,'Color','r')
-	text(max(xlim)*(40/100),max(ylim)-(max(ylim)-min(ylim))*(10/100),['D = ', num2str(dist1)],'FontSize',16,'Color','k')
-	text(max(xlim)*(40/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['Delta = ', num2str(delta1)],'FontSize',16,'Color','k')
-	text(max(xlim)*(40/100),max(ylim)-(max(ylim)-min(ylim))*(20/100),['Theta = ', num2str(theta1), '°'],'FontSize',16,'Color','k')
-	
-endif
-
-axes('XAxisLocation','top');
+% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+set(gca,'Position',[0.12,0.11,0.80,0.68],'Color','none')
+axes('Position',[0.12,0.11,0.80,0.68],'XAxisLocation','top','YAxisLocation','left','Color','none');
+xlim([1,nscale])
+ylim(q)
+set(gca,'FontSize',s1,'XTick',unique([1,nvoice:nvoice:nscale])); % Element 1 is needed to display freqVec(1) value
+set(gca,'XTickLabel',num2str(periodVec'));
 set(gca,'YTick',[]);
-axis([0,nscale])
-set(gca,'XTick',[0:nvoice:nscale]);
-set(gca,'XTickLabel',periodVec);
-xlabel('Period (s)','FontSize',18)
-set(gca,'position',[0.130,0.110,0.775,0.68])
+xlabel('Period (s)','FontSize',s2)
+title(['Continuous Wavelet Transform Vector Analysis - ROI ',num2str(roi)],'FontSize',s3)
+
+if (length(mark) == 1)
+	
+	dist = sqrt(sum((v(2,:)-v(1,:)).^2)/(nvoice));
+	
+	normpre = sqrt(sum(v(1,:).^2)/(nvoice));
+	normpost = sqrt(sum(v(2,:).^2)/(nvoice));
+	delta = (normpost-normpre);
+	
+	theta = acos((sum(v(2,:).*v(1,:))/(nvoice))/(normpost*normpre));
+	theta = (theta/(pi))*180; % Radians -> Degrees conversion
+	
+	dist = floor(dist*100)/100; % In order to get only 2 decimal digits
+	delta = floor(delta*100)/100; % In order to get only 2 decimal digits
+	theta = floor(theta*100)/100; % In order to get only 2 decimal digits
+	
+	text(max(xlim)*(75/100),max(ylim)-(max(ylim)-min(ylim))*(6/100),['W_2 vs. W_1'],'FontSize',s2,'Color','r')
+	text(max(xlim)*(75/100),max(ylim)-(max(ylim)-min(ylim))*(12/100),['D = ',num2str(dist)],'FontSize',s2,'Color','k')
+	text(max(xlim)*(75/100),max(ylim)-(max(ylim)-min(ylim))*(18/100),['\Delta = ',num2str(delta)],'FontSize',s2,'Color','k')
+	text(max(xlim)*(75/100),max(ylim)-(max(ylim)-min(ylim))*(24/100),['\theta = ',num2str(theta),'^\circ'],'FontSize',s2,'Color','k')
+	
+	% Print output graph
+	if (output)
+		print -depsc vectorout.eps
+	end
+	
+else
+	
+	% Print output graph
+	if (output)
+		print -depsc vectorout.eps
+	end
+	
+	figure
+	
+	for h = 0:(length(mark)-1)
+		for k = 1:(length(mark)-h)
+			
+			dist = sqrt(sum((v(end-h,:)-v(end-k-h,:)).^2)/(nvoice));
+			
+			normpre = sqrt(sum(v(end-k-h,:).^2)/(nvoice));
+			normpost = sqrt(sum(v(end-h,:).^2)/(nvoice));
+			delta = (normpost-normpre);
+			
+			theta = acos((sum(v(end-h,:).*v(end-k-h,:))/(nvoice))/(normpost*normpre));
+			theta = (theta/(pi))*180; % Radians -> Degrees conversion
+			
+			dist = floor(dist*100)/100; % In order to get just 2 decimal digits
+			delta = floor(delta*100)/100; % In order to get just 2 decimal digits
+			theta = floor(theta*100)/100; % In order to get just 2 decimal digits
+			
+			subplot(length(mark),length(mark),length(mark)*(length(mark)-h)-k+1-h), hold on
+			p1 = plot([1:nscale],v(end-h,:),'-r','LineWidth',1);
+			set(p1,'Color',col(end-h,:))
+			p2 = plot([1:nscale],v(end-k-h,:),'-b','LineWidth',1);
+			set(p2,'Color',col(end-k-h,:))
+			
+			xlim([1,nscale])
+			ylim(q) % Fix y-range to enable comparison among different plots
+			set(gca,'FontSize',s1,'XTick',unique([1,nvoice:nvoice:nscale])); % Element 1 is needed to display freqVec(1) value
+			set(gca,'XTickLabel',num2str(freqVec'));
+			
+			if (h == 0)
+				xlabel('Frequency (mHz)','FontSize',s2)
+			end
+			if (k == (length(mark)-h))
+				ylabel('10^3 V Amplitude','FontSize',s2)
+			end
+			
+			if (h == length(mark)-1)
+				title(['Paired Vector Analysis - ROI ',num2str(roi)],'FontSize',18)
+			end
+			
+			% Text Size exception
+			text(max(xlim)*(65/100),max(ylim)-(max(ylim)-min(ylim))*(10/100),['W_',num2str(length(mark)+1-h),' vs. W_',num2str(length(mark)+1-k-h)],'FontSize',s1,'Color','r')
+			text(max(xlim)*(65/100),max(ylim)-(max(ylim)-min(ylim))*(20/100),['D = ',num2str(dist)],'FontSize',s1,'Color','k')
+			text(max(xlim)*(65/100),max(ylim)-(max(ylim)-min(ylim))*(30/100),['\Delta = ',num2str(delta)],'FontSize',s1,'Color','k')
+			text(max(xlim)*(65/100),max(ylim)-(max(ylim)-min(ylim))*(40/100),['\theta = ',num2str(theta),'^\circ'],'FontSize',s1,'Color','k')
+		
+		end
+	end
+	
+	% Print output graph
+	if (output)
+		print -depsc pairvecout.eps
+	end
+	
+end
 
 
-%---------------------------------------------------------------------%
-%                                                                     %
-% A.A. 2009/2010 - 2010/2011                                          %
-% Original code by Federico Alessandro Ruffinatti                     %
-% Università degli Studi di Torino - Italy - DBAU - Scienze MFN       %
-% Scuola di Dottorato in Neuroscienze - XXV ciclo                     %
-%                                                                     %
-% Wavelet computation is regarded as a time convolution and it is     %
-% implemented as a product in the Fourier transformed domain.         %
-% A standard code for this algorithm can be found, for instance,      %
-% in WaveLab850 - http://www-stat.stanford.edu/~wavelab/              %
-%                                                                     %
-% Peaks detection uses a technique that is based on images dilation.  %
-% See, for instance, localMaximum.m m-file by Yonathan Nativ          %
-% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/  %
-%                                                                     %
-%---------------------------------------------------------------------%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%
+%%                                                                                                      %%
+%% KYM Project                                                                                          %%
+%% -----------                                                                                          %%
+%% First Released in 2010                                                                               %%
+%% Original code by Federico Alessandro Ruffinatti                                                      %%
+%%                                                                                                      %%
+%% UNIVERSITY OF TORINO                                                                                 %%
+%% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
+%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
+%% Department of Life Sciences and Systems Biology                                                      %%
+%% Laboratory of Cellular Neurophysiology                                                               %%
+%% Via Accademia Albertina 13 10123 Torino                                                              %%
+%%                                                                                                      %%
+%% Acknowledgements:                                                                                    %%
+%% -----------------                                                                                    %%
+%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
+%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% http://www-stat.stanford.edu/~wavelab/                                                               %%
+%%                                                                                                      %%
+%% Peaks detection uses a technique that is based on images dilation.                                   %%
+%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
+%%                                                                                                      %%
+%%------------------------------------------------------------------------------------------------------%%
+%%------------------------------------------------------------------------------------------------------%%

@@ -1,68 +1,54 @@
-function [mor,fac] = morlet2(Y,sigma2,lft,nvoice)
+function coimask = coi(nvoice,nscale,n,dt,lowest,fac,cone)
 
 %
 %--------------------------------------------------------------------------------
-% Morlet Wavelet ver.2
+% Cone of Influence Handling - COI
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% [mor,fac] = morlet2(Y,sigma2,lft,nvoice)
+% coimask = coi(nvoice,nscale,n,dt,lowest,fac,cone)
 %
 % INPUT       TYPE        MEANING
 % -----       ----        -------
-% Y        -> array    -> Signal FFT
-% sigma2   -> scalar   -> Time/Frequency Resolution Tradeoff
-% lft      -> scalar   -> Low-Frequency Threshold
 % nvoice   -> scalar   -> Amount of Inter-Octave Frequencies
+% nscale   -> scalar   -> size(wt,1)
+% n        -> scalar   -> size(wt,2)
+% dt       -> scalar   -> Sampling Time Mode
+% lowest   -> scalar   -> Frequency of the Lowest Octave
+% fac      -> scalar   -> COI e-folding Factor
+% cone     -> string   -> Cone of Influence Handling Method
 %
 % OUTPUT      TYPE        MEANING
 % ------      ----        -------
-% mor      -> matrix   -> Morlet Wavelet Transform
-% fac      -> scalar   -> COI e-folding Factor
+% coimask  -> matrix   -> COI Mask
 %
 
-% Frequency shift - Useful for calibration
-fs = 7.4;
-
-n = length(Y);
-
-omega = [(0:(n/2)),(((-n/2)+1):-1)]*(2*pi/n);
-omega = omega(:);
-
-noctave = floor(log2(n))-lft;
-nscale = nvoice*noctave;
-mor = zeros(n,nscale);
-
-kscale = 1;
-scale = 2^(lft-1);
-
-for jo = 1:noctave
+switch (cone)
 	
-	for jv = 1:nvoice
+	case 'COI' % Cone of influence mask
 		
-		a = scale*(2^(jv/nvoice));
-		freq = n*(omega/a);
-		% Time convolution as product in the transformed domain
-		Psi = exp(-(sigma2/2)*(freq - fs).^2) - exp(-(freq.^2 + fs.^2)/2);
-		mor(1:n,kscale) = ifft(Y.*Psi);
-		kscale = kscale+1;
-	
-	end
-	
-	scale = scale*2;
-
+		coimask = ones(nscale,n);
+		
+		COI = fac./(lowest.*(2.^([1:1:nscale]./nvoice)));
+		COI = (COI.*1000)./dt;
+		COI(find(COI > n)) = n;
+		
+		% You can use a more severe COI to further reduce edge effects on WAI indexes (especially J)
+		%COI = COI * 1.5;
+		%COI(find(COI > n)) = n;
+		
+		for u = 1:nscale
+			coimask(u,1:floor(COI(u))) = 0;
+			coimask(u,n-floor(COI(u))+1:n) = 0;
+		end
+		
+	case {'PAD','NONE'} % Do nothing
+		
+		coimask = ones(nscale,n);
+		
 end
-
-% Normalization
-mor = ((1+exp(-fs^2)-2*exp(-(3/4)*fs^2))^(-(1/2)))*((sigma2/pi)^(1/4))*mor;
-
-% The matrix mor is ordered from low to high frequencies 
-mor = mor';
-
-% Cone of influence e-folding factor
-fac = (sqrt(sigma2)*fs)/(sqrt(2)*pi);
 
 
 %%------------------------------------------------------------------------------------------------------%%

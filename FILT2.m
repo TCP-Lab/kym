@@ -1,68 +1,34 @@
-function [mor,fac] = morlet2(Y,sigma2,lft,nvoice)
+function fwt = FILT2(wt,varargin)
 
-%
+% 
 %--------------------------------------------------------------------------------
-% Morlet Wavelet ver.2
+% Filter 2 - Band Pass Filter
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% [mor,fac] = morlet2(Y,sigma2,lft,nvoice)
+% fwt = FILT2(wt,varargin)
 %
-% INPUT       TYPE        MEANING
-% -----       ----        -------
-% Y        -> array    -> Signal FFT
-% sigma2   -> scalar   -> Time/Frequency Resolution Tradeoff
-% lft      -> scalar   -> Low-Frequency Threshold
-% nvoice   -> scalar   -> Amount of Inter-Octave Frequencies
+% INPUT       TYPE          MEANING
+% -----       ----          -------
+% wt       -> matrix     -> 1st WT Output - Continuous Wavelet Transform
+% varargin -> cell array -> Band Pass Arrays - [lower_voice : upper_voice]
 %
-% OUTPUT      TYPE        MEANING
-% ------      ----        -------
-% mor      -> matrix   -> Morlet Wavelet Transform
-% fac      -> scalar   -> COI e-folding Factor
+% OUTPUT      TYPE          MEANING
+% ------      ----          -------
+% fwt      -> matrix     -> Filtered Wavelet Transform
 %
 
-% Frequency shift - Useful for calibration
-fs = 7.4;
+mask = zeros(size(wt,1),size(wt,2));
 
-n = length(Y);
-
-omega = [(0:(n/2)),(((-n/2)+1):-1)]*(2*pi/n);
-omega = omega(:);
-
-noctave = floor(log2(n))-lft;
-nscale = nvoice*noctave;
-mor = zeros(n,nscale);
-
-kscale = 1;
-scale = 2^(lft-1);
-
-for jo = 1:noctave
+for k = 1:length(varargin)
 	
-	for jv = 1:nvoice
-		
-		a = scale*(2^(jv/nvoice));
-		freq = n*(omega/a);
-		% Time convolution as product in the transformed domain
-		Psi = exp(-(sigma2/2)*(freq - fs).^2) - exp(-(freq.^2 + fs.^2)/2);
-		mor(1:n,kscale) = ifft(Y.*Psi);
-		kscale = kscale+1;
+	mask(varargin{k},:) = 1;
 	
-	end
-	
-	scale = scale*2;
-
 end
 
-% Normalization
-mor = ((1+exp(-fs^2)-2*exp(-(3/4)*fs^2))^(-(1/2)))*((sigma2/pi)^(1/4))*mor;
-
-% The matrix mor is ordered from low to high frequencies 
-mor = mor';
-
-% Cone of influence e-folding factor
-fac = (sqrt(sigma2)*fs)/(sqrt(2)*pi);
+fwt = wt .* mask;
 
 
 %%------------------------------------------------------------------------------------------------------%%
