@@ -9,7 +9,7 @@ cytosolic concentration time course oscillatory component.
 KYM is tested on both Microsoft and Linux Debian systems, under Octave 3.2.3
 version.
 
-At the present KYM is made up of 12 .m files each containing a single function,
+At the present KYM is made up of 14 .m files each containing a single function,
 for a total of about 1500 code lines, but only 4 of them (`VX`, `WT`, `PD`,
 `FEAT`) need to be directly managed by the end user. The other ones are
 auxiliary functions invoked on the fly by the mains.

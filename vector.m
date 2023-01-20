@@ -83,11 +83,11 @@ if (length(mark) > 1)
 
 endif
 
-plot(pre,'--b'), hold on
+plot(pre,'-b'), hold on
 if (length(mark) > 1)
-	plot(mid,'--g')
+	plot(mid,'-g')
 endif
-plot(post,'--r')
+plot(post,'-r')
 axis([0,nscale])
 set(gca,'XTick',[0:nvoice:nscale]);
 set(gca,'XTickLabel',freqVec);

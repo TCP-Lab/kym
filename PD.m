@@ -1,4 +1,4 @@
-function ratio = PD(wt,par,thr1,thr2,output)
+function ratio = PD(wt,par,sig,thr1,thr2,output)
 
 %
 %---------------------------------------------------------------------------
@@ -21,7 +21,7 @@ function ratio = PD(wt,par,thr1,thr2,output)
 % OUTPUT      TYPE         MEANING
 % ------      ----         -------
 % ratio    -> array     -> post/pre Ratio Vector
-% -none-   -> plot      -> 5 Plots Resulting from Analysis
+% -none-   -> plot      -> 6 Plots Resulting from Analysis
 %
 
 % Variables Assignment
@@ -39,16 +39,17 @@ nvoice = (size(x)(1))/(length(freqVec)-1);
 n = size(x)(2);
 
 % Output Print control - Default value = false
-if (nargin < 5)
+if (nargin < 6)
 	output = false;
 endif
 % Threshold control - Default value = 0
-if (nargin < 4)
+if (nargin < 5)
 	thr2 = 0;
 endif
-if (nargin < 3)
+if (nargin < 4)
 	thr1 = 0;
 endif
+
 
 %--------------------------------------------------------------------------------
 % Wavelet Power Spectrum
@@ -56,14 +57,26 @@ endif
 
 figure
 
-printf("\n\n\nPower Index");
-printf("\n===========\n\n");
-
 energy(x,timeVec,freqVec,nvoice,mark)
 
 % Print output graph
 if (output)
 	print -depsc energyout.eps
+endif
+
+%--------------------------------------------------------------------------------
+% Fourier Spectrum vs. Wavelet Energy Density
+%--------------------------------------------------------------------------------
+
+figure
+
+fourier(x,sig,freqVec,1)
+
+title(['Fourier Spectrum vs. Wavelet Energy Density - ROI ',num2str(par.r)],'FontSize',18)
+
+% Print output graph
+if (output)
+	print -depsc fourierout.eps
 endif
 
 %--------------------------------------------------------------------------------
@@ -125,28 +138,51 @@ figure
 l = 7;
 
 % Threshold Index
-
-printf(["\n\n\n",num2str(thr2),"%% Thresholded WAI"]);
-printf("\n===================\n\n");
-
 wai(x,timeVec,lowest,nvoice,mark,maxima,l,0)
 
 title([num2str(thr2),'% Thresholded WAI'],'FontSize',18)
 
 % NO Threshold Index
-
-printf("\n\n\nNO Thresholded WAI");
-printf("\n==================\n\n");
-
 wai(x,timeVec,lowest,nvoice,mark,maximaNT,l,1)
-
-printf("\n\n");
 
 title('NO Thresholded WAI','FontSize',18)
 
 % Print output graph
 if (output)
 	print -depsc indexout.eps
+endif
+
+%--------------------------------------------------------------------------------
+% Morlet Wavelet Transform Complete-Wave-Activity Index (WAI)
+%--------------------------------------------------------------------------------
+
+figure
+
+% Threshold Index
+
+minimox = min(min(x));
+xt = x - minimox;
+massimox = max(max(xt));
+xt = xt / massimox;
+
+threshold = thr2/100;
+
+xt = (xt >= threshold);
+xt = x .* xt;
+
+waiComp(xt,timeVec,freqVec,nvoice,mark,0)
+
+title([num2str(thr2),'% Thresholded Complete-WAI'],'FontSize',18)
+
+% NO Threshold Index
+
+waiComp(x,timeVec,freqVec,nvoice,mark,1)
+
+title('NO Thresholded Complete-WAI','FontSize',18)
+
+% Print output graph
+if (output)
+	print -depsc indexcompout.eps
 endif
 
 %--------------------------------------------------------------------------------

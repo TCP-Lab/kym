@@ -46,10 +46,17 @@ if (nargin < 4)
 endif
 
 meanratio = mean(ratiomat);
+stdevratio = std(ratiomat);
+stderratio = stdevratio./sqrt(size(ratiomat)(1));
+addstd = meanratio.+1.96*stderratio;
+substd = meanratio.-1.96*stderratio;
 
 figure
 
-plot(meanratio,'LineWidth',2), hold on
+plot(meanratio,'-r','LineWidth',2), hold on
+plot(addstd,'-b','LineWidth',1)
+plot(substd,'-b','LineWidth',1)
+plot([min(xlim),max(xlim)],[1,1],'-m','LineWidth',2)
 
 axis([0,nscale])
 set(gca,'XTick',[0:nvoice:nscale]);
@@ -72,6 +79,15 @@ title(['Multitrace Features Extraction'],'FontSize',18)
 if (output)
 	print -depsc featureout.eps
 endif
+
+%% if (length(mark) < 3)
+%% 	[pval,t,dof] = t_test_2(c{1},c{2});
+%% 	d3 = MEAN3(2)/MEAN3(1);
+%% 	d3 = floor(d3*100)/100; % In order to have only 2 decimal digits
+%% 	printf(["\nr-J = ",num2str(d3)]);
+%% 	%printf(["\nDelta-J Significance Level = ",num2str(pval*100)]);
+%% 	printf(["\n"]);
+%% endif
 
 
 %---------------------------------------------------------------------%

@@ -37,18 +37,15 @@ if (length(mark) > 1)
 	endfor
 endif
 MEAN = [MEAN,(1./(length(timeVec)-mark(end)+1))*sum(PWR(mark(end):end))];
-if (length(mark) < 3)
-	d = MEAN(2)/MEAN(1);
-	d = floor(d*100)/100; % In order to have only 2 decimal digits
-	printf(["\nr-P = ",num2str(d),"\n\n"]);
-endif
+d = MEAN(2)/MEAN(1);
+d = floor(d*100)/100; % In order to have only 2 decimal digits
 MEAN = floor(MEAN*10)/10; % In order to have only 1 decimal digits
 
 % Plotting
 subplot(2,2,2), hold on
 	plot(timeVec,PWR)
 	for k = 1:length(mark)
-			plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'--r','LineWidth',1)
+			plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
 	endfor
 	axis([timeVec(1),timeVec(end)])
 	set(gca,'XTick',[get(gca,'XTick'),timeVec(end)]);

@@ -1,4 +1,4 @@
-function [wt,par] = WT(filename,unit,mark,roi,lft,nvoice,wavelet,output)
+function [wt,par,sig] = WT(filename,unit,mark,roi,lft,nvoice,wavelet,output)
 
 %
 %---------------------------------------------------------------------------
@@ -118,6 +118,7 @@ for j = 1:(size(data))(2)
 	x2=mean(timeVec(end+1-10:end));
 	trend = (y2-y1)/(x2-x1).*(timeVec-x1)+y1;
 	y = y-trend;
+	sig = y;
 	
 	% Fourier Transform of signal
 	Y = fft(y);
@@ -130,11 +131,11 @@ for j = 1:(size(data))(2)
 	
 	subplot(3,2,1), hold on
 	
-	plot(timeVec,yraw,'--b','LineWidth',1)
-	plot(timeVec,y+mean(yraw),'--r','LineWidth',1)
-	plot(timeVec,trend,'--g','LineWidth',1)
+	plot(timeVec,yraw,'-b','LineWidth',1)
+	plot(timeVec,y+mean(yraw),'-r','LineWidth',1)
+	plot(timeVec,trend,'-g','LineWidth',1)
 	for k = 1:length(mark)
-		plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'--r','LineWidth',1)
+		plot([timeVec(mark(k)),timeVec(mark(k))],[min(ylim),max(ylim)],'-r','LineWidth',1)
 	endfor
 	
 	axis([timeVec(1),timeVec(end)])
