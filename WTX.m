@@ -166,10 +166,10 @@ nscale = nvoice*noctave;
 scaleVec = 2.^[1:noctave+1];
 scaleVec = fliplr(scaleVec);
 % Express frequency in mHz, with 1 decimal digit; freqVec(end) = f.Nyquist = 1/(2*dt)
-freqVec = floor((1000./(scaleVec*dt))*10)/10; % In order to get only 1 decimal digit
+freqVec = round((1000./(scaleVec*dt))*10)/10; % In order to get only 1 decimal digit
 lowest = 1000/(2*dt*2^(length(freqVec)-1)); % To preserve an accurate value for freqVec(1)
 % Express period in s, with 1 decimal digit - periodVec(end) = 1/f.Nyquist = 2*dt
-periodVec = floor((scaleVec*dt)*10)/10; % In order to get only 1 decimal digit
+periodVec = round((scaleVec*dt)*10)/10; % In order to get only 1 decimal digit
 
 %---------------------------------------------------------------------------
 % Transform and Plot
@@ -343,11 +343,11 @@ subplot(2,2,[2 4]), hold on
 	set(gca,'YDir','normal','YTick',[1:10:101]);
 	massimo = max(max(ATX));
 	minimo = min(min(ATX));
-	magnVec = floor([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
+	magnVec = round([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
 	set(gca,'YTickLabel',num2str(magnVec'));
 	xlabel('Ratio','FontSize',s2)
 	
-	% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+	% Resize -> Syntax Template: set(gca,'Position',[left bottom width height])
 	set(gca,'Position',[0.96,0.11,0.02,0.815])
 	
 	subplot(2,2,1)
@@ -593,11 +593,11 @@ subplot(2,2,[2 4]), hold on
 	set(gca,'YDir','normal','YTick',[1:10:101]);
 	massimo = max(max(VfX));
 	minimo = min(min(VfX));
-	magnVec = floor([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
+	magnVec = round([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
 	set(gca,'YTickLabel',num2str(magnVec'));
 	xlabel('10^3 V Amp','FontSize',s2)
 	
-	% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+	% Resize -> Syntax Template: set(gca,'Position',[left bottom width height])
 	set(gca,'Position',[0.96,0.11,0.02,0.815])
 	
 	subplot(2,2,1)
@@ -698,11 +698,11 @@ if (length(mark) > 0)
 		set(gca,'FontSize',s1,'XTick',[0]);
 		set(gca,'XTickLabel','');
 		set(gca,'YDir','normal','YTick',[1:10:101]);
-		magnVec = floor([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
+		magnVec = round([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
 		set(gca,'YTickLabel',num2str(magnVec'));
 		xlabel('10^3 V Amp','FontSize',s2)
 		
-		% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+		% Resize -> Syntax Template: set(gca,'Position',[left bottom width height])
 		set(gca,'Position',[0.96,0.40963,0.02,0.517])
 		
 	% Add second color bar
@@ -717,11 +717,11 @@ if (length(mark) > 0)
 		set(gca,'YDir','normal','YTick',[1:20:101]);
 		massimo = max(max(vratio));
 		minimo = min(min(vratio));
-		magnVec = floor([minimo:(massimo-minimo)/5:massimo]*100)/100; % In order to get only 2 decimal digits
+		magnVec = round([minimo:(massimo-minimo)/5:massimo]*100)/100; % In order to get only 2 decimal digits
 		set(gca,'YTickLabel',num2str(magnVec'));
 		xlabel('fold','FontSize',s2)
 		
-		% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+		% Resize -> Syntax Template: set(gca,'Position',[left bottom width height])
 		set(gca,'Position',[0.96,0.11,0.02,0.216])
 		
 		subplot(3,2,1)

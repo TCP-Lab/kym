@@ -1,34 +1,48 @@
-function fwt = FILT2(wt,varargin)
+function fwt = FILT2(wt,thr,nstep)
 
 % 
 %--------------------------------------------------------------------------------
-% Filter 2 - Band Pass Filter
+% Filter 2 - Smooth Amplitude Filter (Islands with shores)
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% fwt = FILT2(wt,varargin)
+% fwt = FILT2(wt,thr,nstep)
 %
-% INPUT       TYPE          MEANING
-% -----       ----          -------
-% wt       -> matrix     -> 1st WT Output - Continuous Wavelet Transform
-% varargin -> cell array -> Band Pass Arrays - [lower_voice : upper_voice]
+% INPUT       TYPE         MEANING
+% -----       ----         -------
+% wt       -> matrix    -> 1st WT Output - Continuous Wavelet Transform
+% thr      -> scalar    -> Threshold Percentage
+% nstep    -> scalar    -> Stepness of the shore
 %
-% OUTPUT      TYPE          MEANING
-% ------      ----          -------
-% fwt      -> matrix     -> Filtered Wavelet Transform
+% OUTPUT      TYPE         MEANING
+% ------      ----         -------
+% fwt      -> matrix    -> Filtered Wavelet Transform
 %
 
-mask = zeros(size(wt,1),size(wt,2));
+% Variables assignment
+x = abs(wt);
 
-for k = 1:length(varargin)
-	
-	mask(varargin{k},:) = 1;
-	
+% Threshold
+x = (x-min(min(x)))/max(max(x-min(min(x))));
+threshold = thr/100;
+
+% Sub-threshold zero-sea + 10% shore
+shore = zeros(size(wt));
+for k = 1:nstep
+	shore = shore + ((k/(nstep+1))*(x>=(threshold+((k-1)/(nstep+1)/10)) & x<(threshold+(k/(nstep+1)/10))));
 end
 
-fwt = wt .* mask;
+fwt = wt .* (shore + (x >= (threshold+(k/(nstep+1)/10))));
+
+%% Show the Shore!
+%figure
+%imagesc(flipud(shore))
+
+%% Show the whole mask!
+%figure
+%imagesc(flipud((shore + (x >= (threshold+(k/(nstep+1)/10))))))
 
 
 %%------------------------------------------------------------------------------------------------------%%

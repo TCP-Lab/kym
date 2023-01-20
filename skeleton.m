@@ -1,14 +1,14 @@
-function maxima = paths(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noPlateau,grafunc)
+function [skex,skey] = skeleton(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noPlateau,grafunc)
 
 %
 %--------------------------------------------------------------------------------
-% NU CWT Frequency Paths
+% NU CWT Skeleton Extraction
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% maxima = paths(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noPlateau,grafunc)
+% [skex,skey] = skeleton(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noPlateau,grafunc)
 %
 % INPUT        TYPE       MEANING
 % -----        ----       -------
@@ -27,8 +27,9 @@ function maxima = paths(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noP
 %
 % OUTPUT       TYPE        MEANING
 % ------       ----        -------
-% maxima    -> matrix   -> Thresholded Maxima Map
-% -none-    -> plot     -> 1 Plot Resulting from Analysis
+% skex      -> matrix  -> Skeleton of CWT Modulus
+% skey      -> matrix  -> Skeleton of CWT Real Part
+% -none-    -> plot    -> 1 Plot Resulting from Analysis
 %
 
 % Graphic Parameters
@@ -51,10 +52,12 @@ if (noPlateau)
 	x = x + rand(size(x))*minimumDiff;
 end
 
-% North-South directional maxima
-se = ones(minDist,1);
+% East-West directional maxima
+se = ones(1,minDist);
 X = imdilate(x,se);
-maxima = (x == X);
+skex = (x == X);
+Y = imdilate(y,se);
+skey = (y == Y);
 
 % Rescale to [0,1]
 wtabs = (x-min(min(x)))/max(max(x-min(min(x))));
@@ -65,14 +68,17 @@ threshold = thr/100;
 wtabst = (wtabs >= threshold);
 wtrealt = (wtreal >= threshold);
 %wtrealt = wtabst; % To use the same threshold contours used for modulus
-maxima = maxima .* wtabst .* coimask .* [ones(nscale-log2(US)*nvoice,n);zeros(log2(US)*nvoice,n)];
+skex = skex .* wtabst .* coimask .* [ones(nscale-log2(US)*nvoice,n);zeros(log2(US)*nvoice,n)];
+skey = skey .* wtrealt .* coimask .* [ones(nscale-log2(US)*nvoice,n);zeros(log2(US)*nvoice,n)];
 
 % Enable graphical functions
 if (grafunc)
 	
-	% Find maxima
-	%[rx,cx] = find(maxima);
-	index1 = find(maxima);
+	% Find modulus maxima
+	%[rx,cx] = find(skex);
+	index1 = find(skex);
+	%[ry,cy] = find(skey);
+	indey1 = find(skey);
 	
 	%---------------------------------------------------------------------------
 	% Modulus plot preparation
@@ -80,9 +86,8 @@ if (grafunc)
 	
 	% Convert to RGB and black COI region
 	index2 = find(coimask == 0);
-	%index2 = find(coimask == 0 | wtabst == 0); % Convert to RGB and black also thresholded regions
 	[wtabs,b] = gray2ind(wtabs,128);
-	wtabs = ind2rgb(wtabs,bone(128));	
+	wtabs = ind2rgb(wtabs,bone(128));
 	wtabs(index2) = 0;
 	wtabs(index2 + n*nscale) = 0;
 	wtabs(index2 + 2*n*nscale) = 0;
@@ -97,38 +102,37 @@ if (grafunc)
 	wtabs(:,mark,2) = 0.5;
 	wtabs(:,mark,3) = 1;
 	
-	% Red paths
+	% Colour skeleton red
 	wtabs(index1) = 0.5*wtabs(index1) + 0.5; % Transparency
 	%wtabs(index1) = 0.85; % Constant intensity
 	wtabs(index1 + n*nscale) = 0;
 	wtabs(index1 + 2*n*nscale) = 0;
 	
-	% Increase paths thickness (dark red)	
+	% Increase skeleton thickness (dark red)
 	
-	indexx = index1(find(mod(index1,nscale) ~= 1));
-	wtabs(indexx - 1) = 0.8*wtabs(indexx - 1) + 0.2;
-	%wtabs(indexx - 1) = 0.55;
-	wtabs(indexx - 1 + n*nscale) = 0;
-	wtabs(indexx - 1 + 2*n*nscale) = 0;
+	indexx = index1(find(index1>nscale));
+	wtabs(indexx - nscale) = 0.8*wtabs(indexx - nscale) + 0.2;
+	%wtabs(indexx - nscale) = 0.55;
+	wtabs(indexx - nscale + n*nscale) = 0;
+	wtabs(indexx - nscale + 2*n*nscale) = 0;
 	
-	indexxx = index1(find(mod(index1,nscale) ~= 0));
-	wtabs(indexxx + 1) = 0.8*wtabs(indexxx + 1) + 0.2;
-	%wtabs(indexxx + 1) = 0.55;
-	wtabs(indexxx + 1 + n*nscale) = 0;
-	wtabs(indexxx + 1 + 2*n*nscale) = 0;
+	indexxx = index1(find(index1<=(n-1)*nscale));
+	wtabs(indexxx + nscale) = 0.8*wtabs(indexxx + nscale) + 0.2;
+	%wtabs(indexxx + nscale) = 0.55;
+	wtabs(indexxx + nscale + n*nscale) = 0;
+	wtabs(indexxx + nscale + 2*n*nscale) = 0;
 	
 	%---------------------------------------------------------------------------
 	% Real part plot preparation
 	%---------------------------------------------------------------------------
 	
 	% Convert to RGB and black COI region
-	index3 = find(coimask == 0);
-	%index3 = find(coimask == 0 | wtrealt == 0); % Convert to RGB and black also thresholded regions
+	indey2 = find(coimask == 0);
 	[wtreal,b] = gray2ind(wtreal,128);
 	wtreal = ind2rgb(wtreal,bone(128));
-	wtreal(index3) = 0;
-	wtreal(index3 + n*nscale) = 0;
-	wtreal(index3 + 2*n*nscale) = 0;
+	wtreal(indey2) = 0;
+	wtreal(indey2 + n*nscale) = 0;
+	wtreal(indey2 + 2*n*nscale) = 0;
 	
 	% Blue Nyquist limit
 	wtreal(end-log2(US)*nvoice,:,1) = 0;
@@ -140,26 +144,28 @@ if (grafunc)
 	wtreal(:,mark,2) = 0.5;
 	wtreal(:,mark,3) = 1;
 	
-	% Red paths
-	wtreal(index1) = 0.5*wtreal(index1) + 0.5; % Transparency
-	%wtreal(index1) = 0.85; % Constant intensity
-	wtreal(index1 + n*nscale) = 0;
-	wtreal(index1 + 2*n*nscale) = 0;
+	% Colour skeleton red
+	wtreal(indey1) = 0.5*wtreal(indey1) + 0.5; % Transparency
+	%wtreal(indey1) = 0.85; % Constant intensity
+	wtreal(indey1 + n*nscale) = 0;
+	wtreal(indey1 + 2*n*nscale) = 0;
 	
-	% Increase paths thickness (dark red)
+	% Increase skeleton thickness (dark red)
 	
-	wtreal(indexx - 1) = 0.8*wtreal(indexx - 1) + 0.2;
-	%wtreal(indexx - 1) = 0.55;
-	wtreal(indexx - 1 + n*nscale) = 0;
-	wtreal(indexx - 1 + 2*n*nscale) = 0;
+	indeyy = indey1(find(indey1>nscale));
+	wtreal(indeyy - nscale) = 0.8*wtreal(indeyy - nscale) + 0.2;
+	%wtreal(indeyy - nscale) = 0.55;
+	wtreal(indeyy - nscale + n*nscale) = 0;
+	wtreal(indeyy - nscale + 2*n*nscale) = 0;
 	
-	wtreal(indexxx + 1) = 0.8*wtreal(indexxx + 1) + 0.2;
-	%wtreal(indexxx + 1) = 0.55;
-	wtreal(indexxx + 1 + n*nscale) = 0;
-	wtreal(indexxx + 1 + 2*n*nscale) = 0;
+	indeyyy = indey1(find(indey1<=(n-1)*nscale));
+	wtreal(indeyyy + nscale) = 0.8*wtreal(indeyyy + nscale) + 0.2;
+	%wtreal(indeyyy + nscale) = 0.55;
+	wtreal(indeyyy + nscale + n*nscale) = 0;
+	wtreal(indeyyy + nscale + 2*n*nscale) = 0;
 	
 	%---------------------------------------------------------------------------
-	% Plot paths
+	% Plot skeleton
 	%---------------------------------------------------------------------------
 	
 	subplot(2,1,2), hold on
@@ -176,7 +182,7 @@ if (grafunc)
 			ylabel('Frequency (mHz)','FontSize',s2)
 		end
 		xlabel('Time (s)','FontSize',s2)
-	
+		
 	subplot(2,1,1), hold on
 		
 		image(timeVec,1:nscale,wtabs)

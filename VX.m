@@ -24,6 +24,10 @@ function VX(filename,sub,unit,mark,roi,output)
 % -none-   -> plot                      -> 1 Plot - Sampling Quality Control
 % -none-   -> plot                      -> N Plots - Trace Visualization
 %
+%
+% NOTICE: Negative integers values for 'sub' (suplot index) abolish autoscaling
+% ------  and set the same y-axis range for each trace!
+%
 
 % Graphic parameters
 s1 = 16; % X-Y TickLabel size
@@ -62,38 +66,55 @@ data = dlmread(filename);
 % Extract time vector
 timeVec = data(:,1);
 timeVec = timeVec - timeVec(1); % Start from t=0s
-if (strcmp(unit,'ms')) % Measured in s
-	timeVec = timeVec/1000;
-end
-dt = mode(diff(timeVec)); % Sampling time mode
-
-% Accepted time error in seconds for each sample
-timeError = 0.5;
-
+% Sampling time mode
+dt = mode(diff(timeVec));
+% Accepted time error for each sample
+timeError = dt/2;
 % Check if time steps are equal (evenly spaced)
 if ~(isempty(find(abs(diff(timeVec) - dt) > timeError)))
 	fprintf('\n\nWARNING: Not equal time steps\nArtifacts may be introduced in Wavelet Transform computation!\n');
 end
 
-fprintf('\n\nSampling Time (Mode) = %.2f s\n',dt); % "%.2f" stands for "floating point number with only 2 decimal places"
+if (strcmp(unit,'ms'))
+	fprintf('\n\nSampling Time (Mode) = %.2f ms\n',dt); % "%.2f" stands for "floating point number with only 2 decimal places"
+else
+	fprintf('\n\nSampling Time (Mode) = %.2f s\n',dt);
+end
 
 % Sampling quality control
 figure
 plot(diff(timeVec),'-b','LineWidth',1), hold on
 
+% From now on timeVec is measured in s
+if (strcmp(unit,'ms'))
+	timeVec = timeVec/1000;
+end
+
 xlim([1,length(timeVec)-1])
 set(gca,'FontSize',s1,'XTick',unique([1,get(gca,'XTick'),length(timeVec)-1]));
 xlabel('Time Step','FontSize',s2)
-ylabel('dt (s)','FontSize',s2)
+if (strcmp(unit,'ms'))
+	ylabel('dt (ms)','FontSize',s2)
+else
+	ylabel('dt (s)','FontSize',s2)
+end
 title('Sampling Quality Control','FontSize',s3)
-text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['Sampling Time (Mode) = ',num2str(dt),' s'],'FontSize',s2,'Color','k')
+if (strcmp(unit,'ms'))
+	text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['Sampling Time (Mode) = ',num2str(dt),' ms'],'FontSize',s2,'Color','k')
+else
+	text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['Sampling Time (Mode) = ',num2str(dt),' s'],'FontSize',s2,'Color','k')
+end
 
 for k = 1:length(mark) % If length(mark)==0 this does nothing
 	plot([mark(k),mark(k)],[min(ylim),max(ylim)],'-r','LineWidth',1)
 end
 
-% Print other generic information
-fprintf('\n\nNyquist Frequency = %.2f mHz\n',1000/(2*dt));
+% Print other general information
+if (strcmp(unit,'ms'))
+	fprintf('\n\nNyquist Frequency = %.2f Hz\n',1000/(2*dt));
+else
+	fprintf('\n\nNyquist Frequency = %.2f mHz\n',1000/(2*dt));
+end
 fprintf('\n\nTime Vector Length = %d\n',length(timeVec));
 fprintf('\n\nLowest Frequency = %.2f mHz\n',1000/timeVec(end));
 fprintf('\n\nOctaves Number = %d\n',floor(log2(length(timeVec))));
@@ -101,23 +122,33 @@ fprintf('\n\nOctaves Number = %d\n',floor(log2(length(timeVec))));
 % Data matrix
 data(:,1) = [];
 
-% Select data of interest, keeping into account ROI 1 is the background
+% Check user input
+if (size(data,2) < 1)
+	fprintf('\n\nWARNING: The file is empty or the column of times is missing!\n');
+	fprintf('\n\n');
+	return; %Function breaks
+end
+
+% Select data of interest (keeping into account ROI 1 is the background)
 if (length(roi) == 0)
 	roi = [2:size(data,2)+1];
 end
 data = data(:,roi(1:end)-1);
 
-% Check user input
-if (size(data,2) < 1)
-	fprintf('\n\nWARNING: This file appears not to have any calcium recordings\n');
-	fprintf('\n\n');
-	return; %Function breaks
-end
+massimo = max(max(data));
+minimo = min(min(data));
 
-% Plot original traces of calcium recording
+% Plot original recorded traces
 if (ischar(sub) == 0)
 	
-	if (sub == 1)
+	if (sub == 0)
+		fprintf('\n\nWARNING: Subplot index cannot be equal to 0\n');
+		fprintf('NOTICE: Negative integers abolish autoscaling and fix the y-axis range!\n');
+		fprintf('\n\n');
+		return; %Function breaks
+	end
+	
+	if (abs(sub) == 1)
 		
 		for k = 1:size(data,2)
 			
@@ -127,6 +158,9 @@ if (ischar(sub) == 0)
 			plot(timeVec,y,'-b','LineWidth',1), hold on
 			
 			xlim([timeVec(1),timeVec(end)])
+			if (sub < 0)
+				ylim([minimo,massimo])
+			end
 			set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
 			xlabel('Time (s)','FontSize',s2)
 			ylabel('Ratio','FontSize',s2)
@@ -150,15 +184,18 @@ if (ischar(sub) == 0)
 			
 			y = data(:,k);
 			
-			if (mod(k,sub) == 1)
+			if (mod(k,abs(sub)) == 1)
 				figure
 				count = 1;
 			end
 			
-			subplot(sub,1,count), hold on
+			subplot(abs(sub),1,count), hold on
 			plot(timeVec,y,'-b','LineWidth',1)
 			
 			xlim([timeVec(1),timeVec(end)])
+			if (sub < 0)
+				ylim([minimo,massimo])
+			end
 			set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
 			ylabel('Ratio','FontSize',s2)
 			text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['ROI ',num2str(roi(k))],'FontSize',s2,'Color','k')
@@ -167,14 +204,14 @@ if (ischar(sub) == 0)
 				plot([timeVec(mark(l)),timeVec(mark(l))],[min(ylim),max(ylim)],'-r','LineWidth',1)
 			end
 			
-			if (count == sub || k == size(data,2))
+			if (count == abs(sub) || k == size(data,2))
 				xlabel('Time (s)','FontSize',s2)
-				subplot(sub,1,1)
-				title('Traces Visualization','FontSize',s3)
+				subplot(abs(sub),1,1)
+				title('Trace Visualization','FontSize',s3)
 				
 				% Print output graph
 				if (output)
-					print(['traceout',num2str(floor(k/sub)+(mod(k,sub)~=0)),'.eps'],'-depsc') %Progressive enumeration of output files
+					print(['traceout',num2str(floor(k/abs(sub))+(mod(k,abs(sub))~=0)),'.eps'],'-depsc') %Progressive enumeration of output files
 				end
 			end
 			
@@ -187,7 +224,7 @@ if (ischar(sub) == 0)
 else
 	
 	if (size(data,2) < 2)
-		fprintf('\n\nWARNING: This visualization option requires more than one calcium trace\n');
+		fprintf('\n\nWARNING: This visualization option requires more than one trace\n');
 		fprintf('\n\n');
 		return; %Function breaks
 	else
@@ -214,7 +251,7 @@ else
 				set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
 				xlabel('Time (s)','FontSize',s2)
 				ylabel('Ratio','FontSize',s2)
-				title('Traces Visualization','FontSize',s3)
+				title('Trace Visualization','FontSize',s3)
 				text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['ROI from ',num2str(roi(1)),' to ',num2str(roi(end))],'FontSize',s2,'Color','k')
 				
 				for l = 1:length(mark)
@@ -242,7 +279,7 @@ else
 				set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
 				xlabel('Time (s)','FontSize',s2)
 				ylabel('Ratio','FontSize',s2)
-				title('Traces Visualization','FontSize',s3)
+				title('Trace Visualization','FontSize',s3)
 				text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['ROI from ',num2str(roi(1)),' to ',num2str(roi(end))],'FontSize',s2,'Color','k')
 				
 				for l = 1:length(mark)
@@ -274,7 +311,7 @@ else
 					xlim([timeVec(1),timeVec(end)])
 					set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
 					ylabel('Ratio','FontSize',s2)
-					title('Traces Visualization','FontSize',s3)
+					title('Trace Visualization','FontSize',s3)
 					text(max(xlim)*(3/100),max(ylim)-(max(ylim)-min(ylim))*(15/100),['ROI from ',num2str(roi(1)),' to ',num2str(roi(end))],'FontSize',s2,'Color','k')
 					
 					for l = 1:length(mark)
@@ -307,13 +344,11 @@ else
 					set(gca,'FontSize',s1,'XTick',[0]);
 					set(gca,'XTickLabel','');
 					set(gca,'YDir','normal','YTick',[1:10:101]);
-					massimo = max(max(data));
-					minimo = min(min(data));
-					magnVec = floor([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
+					magnVec = round([minimo:(massimo-minimo)/10:massimo]*100)/100; % In order to get only 2 decimal digits
 					set(gca,'YTickLabel',num2str(magnVec'));
 					xlabel('Ratio','FontSize',s2)
 				
-				% Resize -> Sintax template: set(gca,'Position',[left bottom width height])
+				% Resize -> Syntax template: set(gca,'Position',[left bottom width height])
 				set(gca,'Position',[0.96,0.11,0.02,0.815])
 				
 				subplot(2,2,1)
@@ -357,12 +392,12 @@ fprintf('\n\n');
 %%                                                                                                      %%
 %% Acknowledgements:                                                                                    %%
 %% -----------------                                                                                    %%
-%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
-%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% CWT convolution is implemented as a product in the Fourier transformed domain.                       %%
+%% In particular, CWT computation coding is a refinement of the dyadic algorithm used by WaveLab850.    %%
 %% http://www-stat.stanford.edu/~wavelab/                                                               %%
 %%                                                                                                      %%
-%% Peaks detection uses a technique that is based on images dilation.                                   %%
-%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% A technique based on image dilation has been used for the detection of peaks and maxima.             %%
+%% This idea comes from Yonathan Nativ's localMaximum.m m-file.                                         %%
 %% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
 %%                                                                                                      %%
 %%------------------------------------------------------------------------------------------------------%%

@@ -1,20 +1,22 @@
-function peak(x,coimask,thr,timeVec,freqVec,mark,minDist,noPlateau)
+function peak(x,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noPlateau)
 
 %
 %--------------------------------------------------------------------------------
-% CWT Peaks Detection
+% NU CWT Peaks Detection
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% peak(x,coimask,thr,timeVec,freqVec,mark,minDist,noPlateau)
+% peak(x,coimask,thr,unit,US,timeVec,freqVec,mark,minDist,noPlateau)
 %
 % INPUT        TYPE       MEANING
 % -----        ----       -------
 % x         -> matrix  -> Continuous Wavelet Modulus
 % coimask   -> matrix  -> COI Mask
 % thr       -> scalar  -> Threshold Percentage
+% unit      -> string  -> Time Unit: 's' or 'ms'
+% US        -> scalar  -> US-Upsampling factor
 % timeVec   -> array   -> Time Vector
 % freqVec   -> array   -> Frequency Vector
 % mark      -> array   -> Time Marker Set (Step Number)
@@ -31,16 +33,16 @@ s1 = 16; % X-Y TickLabel Size
 s2 = 19; % X-Y Label and Text Size
 s3 = 24; % Title Size
 
+% Variables Assignment
+[nscale,n] = size(x);
+nvoice = nscale/(length(freqVec)-1);
+lowest = freqVec(end)/(2^(length(freqVec)-1));
+
 % If minimum distance isn't defined for all of x dimensions
 % the first value is used as the default for all of the dimensions
 if (length(minDist) ~= 2)
 	minDist = minDist(ones(1,2));
 end
-
-n = size(x,2);
-nscale = size(x,1);
-nvoice = size(x,1)/(length(freqVec)-1);
-lowest = freqVec(end)/(2^(length(freqVec)-1));
 
 % Plateau handling
 % Without this code points with the same hight will be recognized as peaks
@@ -61,35 +63,43 @@ maxima = (x == X);
 % Rescale to [0,1]
 wtabs = (x-min(min(x)))/max(max(x-min(min(x))));
 
-% Threshold and COI
+% Threshold, COI and "ultra-Nyquist zone"
 threshold = thr/100;
 wtabst = (wtabs >= threshold);
-maxima = maxima .* wtabst .* coimask;
+maxima = maxima .* wtabst .* coimask .* [ones(nscale-log2(US)*nvoice,n);zeros(log2(US)*nvoice,n)];
 
-% Find and mark the peaks
+% Find peaks
 [rx,cx] = find(maxima);
 index1 = find(maxima);
 
-% Convert to RGB and shade filtered regions gray - If length(index)==0 this does nothing
-index2 = find(coimask == 0 | wtabst == 0);
+% Convert to RGB
 [wtabsind,b] = gray2ind(wtabs,128);
 wtabs = ind2rgb(wtabsind,jet(128));
 gswtabs = ind2rgb(wtabsind,gray(128));
+
+% Shade thresholded regions and the "ultra-Nyquist zone" with gray
+index2 = find(coimask == 0 | wtabst == 0);
 wtabs(index2) = gswtabs(index2);
 wtabs(index2 + n*nscale) = gswtabs(index2 + n*nscale);
 wtabs(index2 + 2*n*nscale) = gswtabs(index2 + 2*n*nscale);
+wtabs(end-log2(US)*nvoice+1:end,:,:) = gswtabs(end-log2(US)*nvoice+1:end,:,:);
 
-% Colour markers blue - If length(mark)==0 this does nothing
+% Blue Nyquist limit
+wtabs(end-log2(US)*nvoice,:,1) = 0;
+wtabs(end-log2(US)*nvoice,:,2) = 0.5;
+wtabs(end-log2(US)*nvoice,:,3) = 1;
+
+% Blue markers - If length(mark)==0 this does nothing
 wtabs(:,mark,1) = 0;
 wtabs(:,mark,2) = 0.5;
 wtabs(:,mark,3) = 1;
 
-% Colour maxima projections red
+% Red maxima projections
 wtabs(rx,:,1) = 1;
 wtabs(rx,:,2) = 0;
 wtabs(rx,:,3) = 0;
 
-% Colour maxima white
+% White maxima
 wtabs(index1) = 1;
 wtabs(index1 + n*nscale) = 1;
 wtabs(index1 + 2*n*nscale) = 1;
@@ -108,28 +118,29 @@ for k = 1:3
 	wtabs(indexx + k*nscale + 2*n*nscale) = 1;
 end
 
-% Display results
-image(timeVec(1):timeVec(end),1:size(wtabs,1),wtabs), hold on
+% Display scalogram
+image(timeVec,1:nscale,wtabs), hold on
 xlim([timeVec(1),timeVec(end)])
-ylim([0.5,size(wtabs,1)+0.5])
+ylim([0.5,nscale+0.5])
 set(gca,'FontSize',s1,'XTick',unique([get(gca,'XTick'),floor(timeVec(end))]));
 set(gca,'YDir','normal','YTick',unique([1,nvoice:nvoice:nscale])); % Element 1 is needed to display freqVec(1) value
-set(gca,'YTickLabel',num2str(freqVec'));
-ylabel('Frequency (mHz)','FontSize',s2)
+set(gca,'YTickLabel',num2str(freqVec',4));
+if (strcmp(unit,'ms'))
+	ylabel('Frequency (Hz)','FontSize',s2)
+else
+	ylabel('Frequency (mHz)','FontSize',s2)
+end
 xlabel('Time (s)','FontSize',s2)
 
-% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+% Label maxima
 set(gca,'Position',[0.12,0.11,0.80,0.815],'Color','none')
 axes('Position',[0.12,0.11,0.80,0.815],'XAxisLocation','bottom','YAxisLocation','right','Color','none','YColor','r');
 xlim([timeVec(1),timeVec(end)])
-ylim([0.5,size(wtabs,1)+0.5])
+ylim([0.5,nscale+0.5])
 set(gca,'FontSize',s1,'XTick',[]);
 set(gca,'YDir','normal','YTick',unique(rx));
-
 maxVec = lowest*(2.^(unique(rx)/nvoice));
-maxVec = floor(maxVec*10)/10;
-
-set(gca,'YTickLabel',num2str(maxVec));
+set(gca,'YTickLabel',num2str(maxVec,4));
 
 
 %%------------------------------------------------------------------------------------------------------%%
@@ -142,19 +153,19 @@ set(gca,'YTickLabel',num2str(maxVec));
 %%                                                                                                      %%
 %% UNIVERSITY OF TORINO                                                                                 %%
 %% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
-%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
+%% Neurosciences PhD - Experimental Neurosciences - XXV Cycle                                           %%
 %% Department of Life Sciences and Systems Biology                                                      %%
 %% Laboratory of Cellular Neurophysiology                                                               %%
 %% Via Accademia Albertina 13 10123 Torino                                                              %%
 %%                                                                                                      %%
 %% Acknowledgements:                                                                                    %%
 %% -----------------                                                                                    %%
-%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
-%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
+%% CWT convolution is implemented as a product in the Fourier transformed domain.                       %%
+%% In particular, the code for CWT computation is a refinement of WaveLab850 dyadic algorithm.          %%
 %% http://www-stat.stanford.edu/~wavelab/                                                               %%
 %%                                                                                                      %%
-%% Peaks detection uses a technique that is based on images dilation.                                   %%
-%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
+%% A technique based on image dilation has been used for the detection of peaks and maxima.             %%
+%% This idea comes from Yonathan Nativ's localMaximum.m m-file.                                         %%
 %% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
 %%                                                                                                      %%
 %%------------------------------------------------------------------------------------------------------%%

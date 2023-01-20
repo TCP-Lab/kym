@@ -1,4 +1,4 @@
-function ratio = PD(wt,par,sig,thr1,thr2,output)
+function ratio = KYM(wt,par,sig,thr,output)
 
 % 
 %--------------------------------------------------------------------------------
@@ -8,15 +8,14 @@ function ratio = PD(wt,par,sig,thr1,thr2,output)
 %
 % Function Definition
 %
-% ratio = PD(wt,par,sig,thr1,thr2,output)
+% ratio = KYM(wt,par,sig,thr,output)
 %
 % INPUT       TYPE         MEANING
 % -----       ----         -------
 % wt       -> matrix    -> 1st WT Output - Continuous Wavelet Transform
 % par      -> structure -> 2nd WT Output - Parameters
 % sig      -> array     -> 3rd WT Output - Calcium Signal
-% thr1     -> scalar    -> Peaks Detection Threshold Percentage
-% thr2     -> scalar    -> Frequency Paths Threshold Percentage
+% thr      -> scalar    -> Scalogram Threshold Percentage
 % output   -> boolean   -> Print .eps Output Graphs
 %
 % OUTPUT      TYPE         MEANING
@@ -47,44 +46,51 @@ coimask = par.k;
 timeVec = par.x;
 freqVec = par.y;
 periodVec = par.z;
+unit = par.u;
 mark = par.m;
+roi = par.r;
+admis = par.c;
+US = par.US;
 
 x = abs(wt);
 y = abs(real(wt));
-
-nscale = size(x,1);
-nvoice = (size(x,1))/(length(freqVec)-1);
-n = size(x,2);
 
 %---------------------------------------------------------------------------
 % Input Control
 %---------------------------------------------------------------------------
 
 % Print plots - Default value = false = Print nothing
-if (nargin < 6)
+if (nargin < 5)
 	output = false;
 end
 
 % Thresholds - Default value = 0
-if (nargin < 5)
-	thr2 = 0;
-end
 if (nargin < 4)
-	thr1 = 0;
+	thr = 0;
 end
 
 %--------------------------------------------------------------------------------
 % CWT Analysis: selectively enable/disable each one of the following features
 %--------------------------------------------------------------------------------
 
+ENERGY		= false;
+FOURIER		= true;
+PEAK		= false;
+PATHS		= false;
+SKELETON	= false;
+HURST		= false;
+HOLDER		= false;
+WAI			= false;
+VECTOR		= false;
+
 %--------------------------------------------------------------------------------
 % Wavelet Power Spectrum
 %--------------------------------------------------------------------------------
 
-if 1
+if ENERGY
 	figure
 	
-	energy(x,coimask,timeVec,freqVec,nvoice,mark)
+	energy(x,coimask,unit,US,timeVec,freqVec,mark,admis)
 	
 	% Print output graph
 	if (output)
@@ -96,12 +102,12 @@ end
 % Fourier Spectrum vs. Wavelet Energy Density
 %--------------------------------------------------------------------------------
 
-if 1
-	figure
+if FOURIER
 	
-	fourier(x,coimask,sig,freqVec,1,1)
+	filter = 0;
+	ylog = 1;
 	
-	title(['Fourier Spectrum vs. Wavelet Energy Density - ROI ',num2str(par.r)],'FontSize',s3)
+	kymfourier(x,coimask,sig,unit,US,freqVec,roi,admis,filter,ylog)
 	
 	% Print output graph
 	if (output)
@@ -113,12 +119,12 @@ end
 % CWT Peaks Detection
 %--------------------------------------------------------------------------------
 
-if 1
+if PEAK
 	figure
 	
-	peak(x,coimask,thr1,timeVec,freqVec,mark,5,false)
+	peak(x,coimask,thr,unit,US,timeVec,freqVec,mark,5,false)
 	
-	title([num2str(thr1),'% Thresholded - Continuous Wavelet Transform Peak Detection - ROI ',num2str(par.r)],'FontSize',s3)
+	title([num2str(thr),'% Thresholded - NU CWT Peak Detection - ROI ',num2str(par.r)],'FontSize',s3)
 	
 	% Print output graph
 	if (output)
@@ -130,12 +136,12 @@ end
 % CWT Frequency Paths
 %--------------------------------------------------------------------------------
 
-if 1
+if PATHS
 	figure
 	
-	[maxima,maximaNT] = paths(x,y,coimask,thr2,timeVec,freqVec,mark,5,false,true);
+	maxima = paths(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,5,false,true);
 	
-	title([num2str(thr2),'% Thresholded - Continuous Wavelet Transform Frequency Paths - ROI ',num2str(par.r)],'FontSize',s3)
+	title([num2str(thr),'% Thresholded - NU CWT Frequency Paths - ROI ',num2str(par.r)],'FontSize',s3)
 	
 	% Print output graph
 	if (output)
@@ -144,22 +150,66 @@ if 1
 end
 
 %--------------------------------------------------------------------------------
+% CWT Skeleton
+%--------------------------------------------------------------------------------
+
+if SKELETON
+	figure
+	
+	[skex,skey] = skeleton(x,y,coimask,thr,unit,US,timeVec,freqVec,mark,5,false,true);
+	
+	title([num2str(thr),'% Thresholded - NU CWT Skeleton - ROI ',num2str(par.r)],'FontSize',s3)
+	
+	% Print output graph
+	if (output)
+		print -depsc pathout.eps
+	end
+end
+
+%--------------------------------------------------------------------------------
+% Hurst Exponent (H)
+%--------------------------------------------------------------------------------
+
+if HURST
+	
+	% Number of dyadic iteration
+	iter = 0;
+	
+	hurst(x,sig,unit,US,timeVec,freqVec,mark,iter);
+	
+	% Print output graph
+	if (output)
+		print -depsc holderout.eps
+	end
+end
+
+%--------------------------------------------------------------------------------
+% Holder Exponent (alpha)
+%--------------------------------------------------------------------------------
+
+if HOLDER
+	
+	holder(x,sig,unit,US,timeVec,freqVec,periodVec,skex);
+	
+	% Print output graph
+	if (output)
+		print -depsc holderout.eps
+	end
+end
+
+%--------------------------------------------------------------------------------
 % CWT Wave-Activity Index - WAI
 %--------------------------------------------------------------------------------
 
-if 1
+if WAI
 	figure
 	
-	% Thresholded index
-	wai(x,timeVec,freqVec,nvoice,mark,maxima,0,true);
+	indextype = 'I';
 	
-	title([num2str(thr2),'% Thresholded WAI'],'FontSize',s3)
+	wai(x,coimask,thr,sig,timeVec,freqVec,mark,maxima,indextype,true);
 	
-	% NON Thresholded index
-	wai(x,timeVec,freqVec,nvoice,mark,maximaNT,1,true);
-	
-	title('NO Thresholded WAI','FontSize',s3)
-	
+	title([num2str(thr),'% Thresholded WAI'],'FontSize',s3)
+
 	% Print output graph
 	if (output)
 		print -depsc indexout.eps
@@ -167,39 +217,10 @@ if 1
 end
 
 %--------------------------------------------------------------------------------
-% CWT Complete Wave-Activity Index - Complete-WAI
-%--------------------------------------------------------------------------------
-
-if 1
-	figure
-	
-	% Thresholded index
-	wtabst = (x-min(min(x)))/max(max(x-min(min(x))));
-	threshold = thr2/100;
-	wtabst = (wtabst >= threshold);
-	wtabs = x .* wtabst .* coimask;
-	wtabsNT = x .* coimask;
-	
-	wai(wtabs,timeVec,freqVec,nvoice,mark,[],0,true);
-	
-	title([num2str(thr2),'% Thresholded Complete-WAI'],'FontSize',s3)
-	
-	% NON Thresholded index
-	wai(wtabsNT,timeVec,freqVec,nvoice,mark,[],1,true);
-	
-	title('NO Thresholded Complete-WAI','FontSize',s3)
-	
-	% Print output graph
-	if (output)
-		print -depsc indexcompout.eps
-	end
-end
-
-%--------------------------------------------------------------------------------
 % CWT Vector Approach
 %--------------------------------------------------------------------------------
 
-if 1
+if VECTOR
 	if (length(mark) > 0)
 		
 		ratio = vector(x,coimask,freqVec,periodVec,mark,par.r,output);

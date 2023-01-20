@@ -1,33 +1,34 @@
-function fwt = FILT1(wt,thr)
+function fwt = FILT4(wt,varargin)
 
 % 
 %--------------------------------------------------------------------------------
-% Filter 1 - Amplitude Filter
+% Filter 4 - Band Pass Filter
 %--------------------------------------------------------------------------------
 %
 %
 % Function Definition
 %
-% fwt = FILT1(wt,thr)
+% fwt = FILT4(wt,varargin)
 %
-% INPUT       TYPE         MEANING
-% -----       ----         -------
-% wt       -> matrix    -> 1st WT Output - Continuous Wavelet Transform
-% thr      -> scalar    -> Threshold Percentage
+% INPUT       TYPE          MEANING
+% -----       ----          -------
+% wt       -> matrix     -> 1st WT Output - Continuous Wavelet Transform
+% varargin -> cell array -> Band Pass Arrays - [lower_voice : upper_voice]
 %
-% OUTPUT      TYPE         MEANING
-% ------      ----         -------
-% fwt      -> matrix    -> Filtered Wavelet Transform
+% OUTPUT      TYPE          MEANING
+% ------      ----          -------
+% fwt      -> matrix     -> Filtered Wavelet Transform
 %
 
-% Variables assignment
-x = abs(wt);
+mask = zeros(size(wt,1),size(wt,2));
 
-% Threshold
-x = (x-min(min(x)))/max(max(x-min(min(x))));
-threshold = thr/100;
+for k = 1:length(varargin)
+	
+	mask(varargin{k},:) = 1;
+	
+end
 
-fwt = wt .* (x >= threshold);
+fwt = wt .* mask;
 
 
 %%------------------------------------------------------------------------------------------------------%%
@@ -40,19 +41,19 @@ fwt = wt .* (x >= threshold);
 %%                                                                                                      %%
 %% UNIVERSITY OF TORINO                                                                                 %%
 %% DOCTORAL SCHOOL IN LIFE AND HEALTH SCIENCES                                                          %%
-%% Neurosciences PhD - Experimental Neurosciences - XXV Cycle                                           %%
+%% Neurosciences Ph.D. - Experimental Neurosciences - XXV Cycle                                         %%
 %% Department of Life Sciences and Systems Biology                                                      %%
 %% Laboratory of Cellular Neurophysiology                                                               %%
 %% Via Accademia Albertina 13 10123 Torino                                                              %%
 %%                                                                                                      %%
 %% Acknowledgements:                                                                                    %%
 %% -----------------                                                                                    %%
-%% CWT convolution is implemented as a product in the Fourier transformed domain.                       %%
-%% In particular, the code for CWT computation is a refinement of WaveLab850 dyadic algorithm.          %%
+%% Wavelet Transform computation is here implemented as a product in the Fourier transformed domain.    %%
+%% A standard code for this algorithm can be found, for instance, in WaveLab850.                        %%
 %% http://www-stat.stanford.edu/~wavelab/                                                               %%
 %%                                                                                                      %%
-%% A technique based on image dilation has been used for the detection of peaks and maxima.             %%
-%% This idea comes from Yonathan Nativ's localMaximum.m m-file.                                         %%
+%% Peaks detection uses a technique that is based on images dilation.                                   %%
+%% See, for instance, localMaximum.m m-file by Yonathan Nativ.                                          %%
 %% http://www.mathworks.com/matlabcentral/fileexchange/authors/26510/                                   %%
 %%                                                                                                      %%
 %%------------------------------------------------------------------------------------------------------%%

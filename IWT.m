@@ -128,7 +128,7 @@ wtr(index1 + n*nscale) = gswtr(index1 + n*nscale);
 wtr(index1 + 2*n*nscale) = gswtr(index1 + 2*n*nscale);
 
 % Delete masked regions from scleogram_2
-index2 = find(fwt == 0);
+index2 = find(fwt == 0); % Attenzione: può buttare in "grigio 0.8" eventuali punti =0 nella fwt pur non essendo punti filtrati (vedi '2013-04-26-mean.csv' di REST con FILT3)
 
 % Light Gray - If length(index)==0 this does nothing
 fwtr(index1) = 0.8;
@@ -223,6 +223,8 @@ subplot(3,2,4), hold on
 % Print output graph
 if (output)
 	print -depsc reconout.eps
+	% Return reconstructed (filtered) signal
+	dlmwrite('synth.csv',[timeVec,synth2'])
 end
 
 

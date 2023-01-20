@@ -100,7 +100,7 @@ set(gca,'XTickLabel',num2str(freqVec'));
 xlabel('Frequency (mHz)','FontSize',s2)
 ylabel('post / pre Ratio','FontSize',s2)
 
-% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+% Resize -> Syntax Template: set(gca,'Position',[left bottom width height])
 set(gca,'Position',[0.12,0.11,0.80,0.68],'Color','none')
 axes('Position',[0.12,0.11,0.80,0.68],'XAxisLocation','top','YAxisLocation','left','Color','none');
 xlim([1,nscale])

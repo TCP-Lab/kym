@@ -73,7 +73,7 @@ ylabel('10^3 V Amplitude','FontSize',s2)
 mylegend = legend(lgn,'Location','East');
 set(mylegend,'FontSize',s1);
 
-% Resize -> Sintax Template: set(gca,'Position',[left bottom width height])
+% Resize -> Syntax Template: set(gca,'Position',[left bottom width height])
 set(gca,'Position',[0.12,0.11,0.80,0.68],'Color','none')
 axes('Position',[0.12,0.11,0.80,0.68],'XAxisLocation','top','YAxisLocation','left','Color','none');
 xlim([1,nscale])
@@ -95,9 +95,9 @@ if (length(mark) == 1)
 	theta = acos((sum(v(2,:).*v(1,:))/(nvoice))/(normpost*normpre));
 	theta = (theta/(pi))*180; % Radians -> Degrees conversion
 	
-	dist = floor(dist*100)/100; % In order to get only 2 decimal digits
-	delta = floor(delta*100)/100; % In order to get only 2 decimal digits
-	theta = floor(theta*100)/100; % In order to get only 2 decimal digits
+	dist = round(dist*100)/100; % In order to get only 2 decimal digits
+	delta = round(delta*100)/100; % In order to get only 2 decimal digits
+	theta = round(theta*100)/100; % In order to get only 2 decimal digits
 	
 	text(max(xlim)*(75/100),max(ylim)-(max(ylim)-min(ylim))*(6/100),['W_2 vs. W_1'],'FontSize',s2,'Color','r')
 	text(max(xlim)*(75/100),max(ylim)-(max(ylim)-min(ylim))*(12/100),['D = ',num2str(dist)],'FontSize',s2,'Color','k')
@@ -130,9 +130,9 @@ else
 			theta = acos((sum(v(end-h,:).*v(end-k-h,:))/(nvoice))/(normpost*normpre));
 			theta = (theta/(pi))*180; % Radians -> Degrees conversion
 			
-			dist = floor(dist*100)/100; % In order to get just 2 decimal digits
-			delta = floor(delta*100)/100; % In order to get just 2 decimal digits
-			theta = floor(theta*100)/100; % In order to get just 2 decimal digits
+			dist = round(dist*100)/100; % In order to get just 2 decimal digits
+			delta = round(delta*100)/100; % In order to get just 2 decimal digits
+			theta = round(theta*100)/100; % In order to get just 2 decimal digits
 			
 			subplot(length(mark),length(mark),length(mark)*(length(mark)-h)-k+1-h), hold on
 			p1 = plot([1:nscale],v(end-h,:),'-r','LineWidth',1);
