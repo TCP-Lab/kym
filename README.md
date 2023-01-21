@@ -1,108 +1,68 @@
-# KYM
+# kym
 ###### Wavelet transform-based analyzer of biological signals
 
 ### Introduction
 
-KYM is a software tool that aims at the quantitative analysis of non-stationary
+*kym* is a software tool for the quantitative analysis of non-stationary
 oscillatory signals. It has been developed within the field of neurosciences to
-evaluate the neuronal activity in terms of cytosolic calcium signals, but it can
-be considered as a general-purpose set of functions to implement a wavelet-based
-time-frequency analysis.
+study neuronal activity in terms of cytosolic calcium signals, but it can be
+considered as a general-purpose set of MATLAB functions that implement a
+wavelet-based time/frequency analysis.
 
-KYM has been developed starting from 2010 and released for the first time in
-2011 as supplementary material for the scientific methodological paper [1]. From
-then on, KYM has been modified several times in order to upgrade its features
-(e.g. new handling methods for the cone of influence, transformed domain
-filtering, inverse wavelet transform computation, spatial analysis of the
-oscillatory activity) and it has been already employed in many other works (see
-[2], [3], [4], [5], [6], [7]).
+*kym* has been developed starting from 2010 and released for the first time in
+2011 as supplementary material for a scientific methodological paper ([1]). From
+then on, *kym* has been modified several times to extend its analysis
+capabilities, and different methods to handle the cone of influence as well as
+many filters in the transformed domain are now available and already used in
+many other works (see e.g., [2], [3], [4], [5], [6], [7]).
 
-KYM has been originally developed under the freely redistributable GNU Octave
-environment [8], but starting from version 0.5 it has also been made fully
-compatible with MATLAB environment and, in particular, it has been tested with
-the following releases of these two environments: Octave 3.6.4 and MATLAB 8
-(R2012b).
+*kym* ver.0.6 is the last and most up-to-date release of the software. It
+consists of a collection of 30 .m files, each of them containing a single MATLAB
+function, but **only the "capital" ones (`VX`, `WT`, `WTX`, `IWT`, `KYM`,
+`FILT*`, `FEAT`) need to be directly managed by the end user**, while the other
+ones are to be considered as auxiliary functions, invoked on the fly by the
+previous ones.
 
-Note for Octave users: Octave has two official plotting backends: Gnuplot (a
-classic Linux plotting utility) and FLTK Backend (a new experimental OpenGL
-backend based on the FLTK GUI toolkit). We strongly recommend using the first
-one by typing
+In order to use *kym* (`VX`, `WT` and `WTX` functions in particular), data need
+to be stored in a .csv (comma separated values) file, organized as it follows:
+**the first column must contain the vector of time samples, while the actual
+signals should fill all the other columns**. In the case of calcium signal
+analysis, columns are the time courses of the fluorescence intensity emitted by
+the calcium indicator loaded inside the cells. Each column may represent a
+different cell or a different region of interest (ROI) over the same cell. The
+file `data.csv` provides an example of this and it can be used to test the
+software. It contains the same set of traces showed in [3] to present the
+analytical method: 56 time traces of calcium intracellular concentration
+recorded from ROIs drawn over the same cell, with a sampling time of *dt = 2 s*.
 
-`graphics_toolkit gnuplot`
-
-at octave prompt. Otherwise, you could encounter many serious problems,
-especially in the subplot management. To make this change permanent add or
-modify the line
-
-`graphics_toolkit('gnuplot');`
-
-in your `<your octave dir>\share\octave\site\m\startup\octaverc` file.
-
-KYM ver.0.5 is the last and most up-to-date release of the software. It consists
-of a coordinated set of 19 .m files, each of them containing a single function,
-but **only the "upper-case" ones (`VX`, `WT`, `PD`, `FEAT`, `FILT`, `IWT`,
-`WTX`) need to be directly managed by the end user**, while the others are just
-auxiliary functions invoked on the fly by the first ones.
-
-KYM has a command line user interface that has not been developed taking into
-account the end users and, therefore, a future effort will be aimed at
-developing a more user-friendly interface.
-
-In order to use KYM (`VX`, `WT` and `WTX` functions in particular), data need to
-be stored in a .csv (comma separated values) file, structured as it follows:
-**the first column must contain the vector of time samples, while fluorescence
-signals must fill all the subsequent columns**. In the case of calcium
-signalling analysis, columns are the time courses of the fluorescence intensity
-emitted by the calcium indicator loaded inside the cells. Each column may
-represent a different cell or a different region of interest (ROI) over the
-same cell. The file `data.csv` provides an example of this and you can use it to
-test the software. It contains the same set of traces showed in [3] to better
-describe the analytical method: 56 calcium intracellular concentration time
-courses recorded from ROIs drawn over the same cell, with a sampling time of 2s.
-
-WTX function is specifically tailored for the spatial wavelet analysis of neural
-calcium signals described in [3]. It can load two data arguments, but, in this
-case, it is assumed that you are using a ratiometric fluorescent indicator for
-calcium (such as Fura-2). Further details about this function are given in [3],
-in particular see "Surface to Volume Ratio Assessment" subsection.
+`WTX` function is specifically tailored for the spatial wavelet analysis of
+neural calcium signals as described in [3]. It can take two data arguments when
+using a ratiometric fluorescent indicator for calcium (such as Fura-2). Further
+details about this function are given in [3], in particular see "Surface to
+Volume Ratio Assessment" subsection.
 
 Many other parameters, beyond the raw data, can be passed as argument to the
 main functions, in order to specify the unit of measurement of time, the
-changing points of in-acuto treatments, the threshold levels, and so on. For
-further information about the meaning and the syntax of each KYM function you
-can use help command, followed by the name of a function, to display the
-documentation header inside every .m file, or you can follow the examples below
-to get started. Nevertheless an exhaustive and complete user guide for KYM has
-never been written, so another future effort will be to produce such a
-documentation. At present, inspecting the code line by line is the only actual
-way to have a full understanding of KYM algorithms.
+changing points of *in acuto* treatments, the threshold levels, and so on. For
+further information about the meaning and the syntax of each *kym* function you
+can use the `help` command followed by the name of the function, or you can
+follow the examples below to get started. Nevertheless an exhaustive and
+complete user guide for *kym* has never been written, so a future effort will be
+to produce such a documentation.
 
-Actual wavelet transform computation has been implemented as a product in the
-Fourier transformed domain. A standard code for this algorithm can be found, for
-instance, in WaveLab850 (http://www-stat.stanford.edu/~wavelab/). Peak detection
-uses a technique that is based on image dilation (see, for instance,
-`localMaximum.m` m-file by Yonathan Nativ,
+From a technical point of view, wavelet transform computation has been
+implemented as a product in the Fourier transformed domain. A standard code for
+this algorithm can be found, for instance, in WaveLab850
+(http://www-stat.stanford.edu/~wavelab/). Peak detection is based on image
+dilation (see e.g., `localMaximum.m` m-file by Yonathan Nativ,
 http://www.mathworks.com/matlabcentral/fileexchange/authors/). The rest of the
-code has been written and developed ad hoc to perform the analyses presented
+code has been written and developed *ad hoc* to perform the analyses presented
 in [1] and [3].
 
-**NOTE:** `imdilate` function is required by `peak`, `paths` (and hence by `PD`
-and `WTX`) KYM functions. Octave users can find `imdilate.m` inside the `image`
-package. In order to have no problems with function dependences we recommend to
-install ALL Octave packages at once, simply by following OcatveForge guidelines
-about this. MATLAB users need to have Image Processing Toolbox installed to
-enjoy imdilate function.
-
-Since KYM is an open source code you can inspect it to see exactly what
-algorithms have been used, and then modify the source to produce a better code
-or to satisfy other particular needs. Users may redistribute it and/or modify it
-under the terms of the GNU General Public License (GPL) as published by the Free
-Software Foundation.
-
-To our knowledge this is the first open source tool specifically dedicated to
-the analysis of the time course of cellular calcium signals and, more generally,
-of oscillatory signals recorded by means of fluorescent dyes from biological
-systems.
+**NOTE:** `imdilate` function is required by `peak`, `paths` (and hence by `KYM`
+and `WTX`) *kym* functions. Octave users can find `imdilate.m` within the
+`image` package, while MATLAB users need to have Image Processing Toolbox
+installed.
 
 ### References
 
@@ -120,19 +80,15 @@ systems.
 
 7. Lodola F., Laforenza U., Cattaneo F., Ruffinatti F.A., Poletto V., Massa M., Tancredi R., Zuccolo E., Kheder D., Riccardi A., Biggiogera M., Rosti V., Guerra G., Moccia F. VEGF-induced intracellular Ca2+ oscillations are down-regulated and do not stimulate angiogenesis in breast cancer-derived endothelial colony forming cells. *Oncotarget. 2017.* IN PRESS
 
-8. Eaton JW, Bateman D, Hauberg S (2008) GNU Octave Manual Version 3. UK: Network Theory Ltd.
-
-
 ### Syntax to get started
-
 
 #### Trace Visualization
 
- General Syntax:
+General Syntax:
 
- `VX(filename,sub,unit,mark,roi,output)`
+`VX(filename,sub,unit,mark,roi,output)`
 
-> Example with argument comments:
+> Example with comments on function arguments:
 >
 > `VX('data.csv','C','s',[110],[]);`
 >
@@ -167,7 +123,7 @@ General syntax:
 
 `[wt,par,sig] = WT(filename,unit,mark,roi,lft,nvoice,wavelet,cone,output)`
 
-> Example with argument comments:
+> Example with comments on function arguments:
 >
 > `[wt,par,sig]=WT('data.csv','s',[110],[2:7],3,48,'M1','PAD');`
 >
@@ -211,23 +167,21 @@ General syntax:
     ROI analyzed (ROI 7 in this case). They serves as input argument of `PD`
     function.
 
-#### Wavelet Analysis and Peak Detection:
+#### Wavelet Analysis and Peak Detection
 
 General Syntax:
 
-`ratio = PD(wt,par,sig,thr1,thr2,output)`
+`ratio = KYM(wt,par,sig,thr,output)`
 
-> Example with argument comments:
+> Example with comments on function arguments:
 >
-> `PD(wt,par,sig,50,35);`
+> `KYM(wt,par,sig,50);`
 >
 > * The first three variables (`wt`, `par`, and `sig`) are the outputs of `WT`
     functions concerning the last ROI analyzed by `WT` (ROI 7 in this case).
 >
-> * Peak detection is performed after a 50% thresholding procedure.
->
-> * Frequency paths are detected on scaleograms after a 35% thresholding
-    procedure.
+> * Peak detection and frequency path detection are performed after a 35%
+    thresholding of the scaleogram.
 >
 > * The output consists in several plots deriving the power and the energy
     density of the signal starting from the related wavelet scaleograms: further
